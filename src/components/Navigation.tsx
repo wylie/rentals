@@ -558,32 +558,34 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
             </div>
 
             {/* Footer Buttons */}
-            <div className="flex space-x-3 p-6 border-t bg-gray-50">
-              <button
-                onClick={handleSaveSettings}
-                disabled={isUpdatingFleet}
-                className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
-                  isUpdatingFleet 
-                    ? 'bg-gray-400 text-white cursor-not-allowed' 
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                <span className="material-symbols-outlined">save</span>
-                <span>{isUpdatingFleet ? 'Saving...' : 'Save Changes'}</span>
-              </button>
-              <button
-                onClick={() => setShowSettings(false)}
-                disabled={isUpdatingFleet}
-                className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
-                  isUpdatingFleet
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                }`}
-              >
-                <span className="material-symbols-outlined">close</span>
-                <span>Cancel</span>
-              </button>
-            </div>
+            {activeTab !== 'logout' && (
+              <div className="flex space-x-3 p-6 border-t bg-gray-50">
+                <button
+                  onClick={handleSaveSettings}
+                  disabled={isUpdatingFleet}
+                  className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
+                    isUpdatingFleet 
+                      ? 'bg-gray-400 text-white cursor-not-allowed' 
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  <span className="material-symbols-outlined">save</span>
+                  <span>{isUpdatingFleet ? 'Saving...' : 'Save Changes'}</span>
+                </button>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  disabled={isUpdatingFleet}
+                  className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
+                    isUpdatingFleet
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                  }`}
+                >
+                  <span className="material-symbols-outlined">close</span>
+                  <span>Cancel</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
