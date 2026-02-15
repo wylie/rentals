@@ -14,12 +14,13 @@ interface ReportData {
 export default function Reports() {
   const [reportData, setReportData] = useState<ReportData[]>([])
   const [loading, setLoading] = useState(true)
+  const [assetType, setAssetType] = useState<'bike' | 'helmet'>('bike')
 
   const loadReportData = async () => {
     try {
-      // Get all bikes first
+      // Get all assets first
       const allAssets = await getAssets()
-      const bikes = allAssets.filter(asset => asset.type === 'bike' && asset.active)
+      const activeAssets = allAssets.filter(asset => asset.active)
       
       // Calculate date ranges
       const now = new Date()
@@ -33,15 +34,15 @@ export default function Reports() {
         return checkedOutDate >= weekStart && session.returned_at !== null
       })
 
-      // Process data for each bike
-      const processedData: ReportData[] = bikes.map((bike) => {
-        const bikeSessions = filteredSessions.filter(session => session.asset_id === bike.id)
+      // Process data for each asset
+      const processedData: ReportData[] = activeAssets.map((asset) => {
+        const assetSessions = filteredSessions.filter(session => session.asset_id === asset.id)
         
-        const todaySessions = bikeSessions.filter(session => 
+        const todaySessions = assetSessions.filter(session => 
           new Date(session.checked_out_at) >= todayStart
         )
         
-        const weekSessions = bikeSessions
+        const weekSessions = assetSessions
 
         // Calculate durations in minutes
         const todayDuration = todaySessions.reduce((total, session) => {
@@ -61,7 +62,7 @@ export default function Reports() {
         }, 0)
 
         return {
-          asset: bike,
+          asset,
           todayDuration,
           weekDuration,
           todaySessions: todaySessions.length,
@@ -79,7 +80,7 @@ export default function Reports() {
 
   const exportToCSV = () => {
     const headers = [
-      'Bike',
+      assetType === 'bike' ? 'Bike' : 'Helmet',
       'Today Sessions',
       'Today Duration (min)',
       'Today Avg (min)',
@@ -88,7 +89,9 @@ export default function Reports() {
       'Week Avg (min)'
     ]
 
-    const csvData = reportData.map(data => [
+    const csvData = reportData
+      .filter(item => item.asset.type === assetType)
+      .map(data => [
       data.asset.label,
       data.todaySessions,
       data.todayDuration,
@@ -106,7 +109,7 @@ export default function Reports() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `bike-usage-report-${new Date().toISOString().split('T')[0]}.csv`
+    link.download = `${assetType}-usage-report-${new Date().toISOString().split('T')[0]}.csv`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -133,10 +136,11 @@ export default function Reports() {
     )
   }
 
-  const totalTodaySessions = reportData.reduce((sum, item) => sum + item.todaySessions, 0)
-  const totalTodayDuration = reportData.reduce((sum, item) => sum + item.todayDuration, 0)
-  const totalWeekSessions = reportData.reduce((sum, item) => sum + item.weekSessions, 0)
-  const totalWeekDuration = reportData.reduce((sum, item) => sum + item.weekDuration, 0)
+  const filteredReportData = reportData.filter(item => item.asset.type === assetType)
+  const totalTodaySessions = filteredReportData.reduce((sum, item) => sum + item.todaySessions, 0)
+  const totalTodayDuration = filteredReportData.reduce((sum, item) => sum + item.todayDuration, 0)
+  const totalWeekSessions = filteredReportData.reduce((sum, item) => sum + item.weekSessions, 0)
+  const totalWeekDuration = filteredReportData.reduce((sum, item) => sum + item.weekDuration, 0)
 
   return (
     <div className="space-y-6">
@@ -160,9 +164,33 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* Export Button */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-800">Bike Usage Report</h2>
+      {/* Header and Export */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center space-x-2">
+          <h2 className="text-2xl font-bold text-gray-800">Usage Report</h2>
+          <div className="inline-flex rounded-md shadow-sm" role="group">
+            <button
+              onClick={() => setAssetType('bike')}
+              className={`px-3 py-2 text-sm font-medium border rounded-l-md transition-colors ${
+                assetType === 'bike'
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              Bikes
+            </button>
+            <button
+              onClick={() => setAssetType('helmet')}
+              className={`px-3 py-2 text-sm font-medium border rounded-r-md transition-colors ${
+                assetType === 'helmet'
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              Helmets
+            </button>
+          </div>
+        </div>
         <button
           onClick={exportToCSV}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
@@ -178,7 +206,7 @@ export default function Reports() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Bike
+                  {assetType === 'bike' ? 'Bike' : 'Helmet'}
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Today Sessions
@@ -201,7 +229,7 @@ export default function Reports() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {reportData.map((data) => {
+              {filteredReportData.map((data) => {
                 const todayAvg = data.todaySessions > 0 ? Math.round(data.todayDuration / data.todaySessions) : 0
                 const weekAvg = data.weekSessions > 0 ? Math.round(data.weekDuration / data.weekSessions) : 0
                 
