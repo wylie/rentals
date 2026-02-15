@@ -1,0 +1,298 @@
+// Supabase database utilities for data persistence across devices
+
+import { supabase, isSupabaseConfigured } from './supabase'
+
+export interface Asset {
+  id: number
+  type: 'bike' | 'helmet'
+  label: string
+  active: boolean
+  created_at: string
+  user_id: string
+}
+
+export interface AssetState {
+  id: number
+  asset_id: number
+  in_use: boolean
+  current_session_id: number | null
+  updated_at: string
+  user_id: string
+}
+
+export interface Session {
+  id: number
+  asset_id: number
+  checked_out_at: string
+  returned_at: string | null
+  checked_out_station: string
+  returned_station: string | null
+  checked_out_by: string | null
+  returned_by: string | null
+  created_at: string
+  user_id: string
+}
+
+export type AssetsWithState = Asset & {
+  asset_state: AssetState[]
+}
+
+// Check if Supabase is properly configured
+const checkSupabaseConfig = () => {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase is not configured. Please check your environment variables.')
+  }
+}
+
+// Get current user ID or throw error
+const getCurrentUserId = async (): Promise<string> => {
+  checkSupabaseConfig()
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error || !user) {
+    throw new Error('Not authenticated')
+  }
+  return user.id
+}
+
+// Initialize data for new user
+export const initializeUserData = async (): Promise<void> => {
+  try {
+    const userId = await getCurrentUserId()
+    
+    // Check if user already has data
+    const { data: existingAssets } = await supabase
+      .from('assets')
+      .select('id')
+      .eq('user_id', userId)
+      .limit(1)
+    
+    if (existingAssets && existingAssets.length > 0) {
+      return // User already has data
+    }
+    
+    // Create bikes (01-40)
+    const bikes = Array.from({ length: 40 }, (_, i) => ({
+      type: 'bike' as const,
+      label: `Bike ${String(i + 1).padStart(2, '0')}`,
+      active: true,
+      user_id: userId
+    }))
+    
+    // Create helmets (01-60)
+    const helmets = Array.from({ length: 60 }, (_, i) => ({
+      type: 'helmet' as const,
+      label: `Helmet ${String(i + 1).padStart(2, '0')}`,
+      active: true,
+      user_id: userId
+    }))
+    
+    const allAssets = [...bikes, ...helmets]
+    
+    // Insert assets
+    const { data: insertedAssets, error: assetsError } = await supabase
+      .from('assets')
+      .insert(allAssets)
+      .select()
+    
+    if (assetsError) throw assetsError
+    
+    // Create initial asset states
+    const assetStates = insertedAssets.map(asset => ({
+      asset_id: asset.id,
+      in_use: false,
+      current_session_id: null,
+      user_id: userId
+    }))
+    
+    const { error: statesError } = await supabase
+      .from('asset_states')
+      .insert(assetStates)
+    
+    if (statesError) throw statesError
+    
+  } catch (error) {
+    console.error('Error initializing user data:', error)
+    throw error
+  }
+}
+
+// Assets CRUD
+export const getAssets = async (): Promise<Asset[]> => {
+  try {
+    const userId = await getCurrentUserId()
+    const { data, error } = await supabase
+      .from('assets')
+      .select('*')
+      .eq('user_id', userId)
+      .order('id')
+    
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching assets:', error)
+    return []
+  }
+}
+
+export const getAssetsWithState = async (): Promise<AssetsWithState[]> => {
+  try {
+    const userId = await getCurrentUserId()
+    const { data, error } = await supabase
+      .from('assets')
+      .select(`
+        *,
+        asset_state:asset_states(*)
+      `)
+      .eq('user_id', userId)
+      .order('id')
+    
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching assets with state:', error)
+    return []
+  }
+}
+
+// Asset States CRUD  
+export const getAssetStates = async (): Promise<AssetState[]> => {
+  try {
+    const userId = await getCurrentUserId()
+    const { data, error } = await supabase
+      .from('asset_states')
+      .select('*')
+      .eq('user_id', userId)
+      .order('asset_id')
+    
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching asset states:', error)
+    return []
+  }
+}
+
+export const updateAssetState = async (assetId: number, updates: Partial<Omit<AssetState, 'id' | 'asset_id' | 'user_id'>>): Promise<void> => {
+  try {
+    const userId = await getCurrentUserId()
+    const { error } = await supabase
+      .from('asset_states')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('asset_id', assetId)
+      .eq('user_id', userId)
+    
+    if (error) throw error
+  } catch (error) {
+    console.error('Error updating asset state:', error)
+    throw error
+  }
+}
+
+// Sessions CRUD
+export const getSessions = async (): Promise<Session[]> => {
+  try {
+    const userId = await getCurrentUserId()
+    const { data, error } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching sessions:', error)
+    return []
+  }
+}
+
+export const createSession = async (sessionData: {
+  asset_id: number
+  checked_out_at: string
+  checked_out_station: string
+  checked_out_by?: string | null
+}): Promise<Session | null> => {
+  try {
+    const userId = await getCurrentUserId()
+    const { data, error } = await supabase
+      .from('sessions')
+      .insert({
+        ...sessionData,
+        user_id: userId
+      })
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Error creating session:', error)
+    return null
+  }
+}
+
+export const updateSession = async (sessionId: number, updates: {
+  returned_at?: string | null
+  returned_station?: string | null
+  returned_by?: string | null
+}): Promise<void> => {
+  try {
+    const userId = await getCurrentUserId()
+    const { error } = await supabase
+      .from('sessions')
+      .update(updates)
+      .eq('id', sessionId)
+      .eq('user_id', userId)
+    
+    if (error) throw error
+  } catch (error) {
+    console.error('Error updating session:', error)
+    throw error
+  }
+}
+
+// Authentication helpers
+export const signIn = async (email: string, password: string) => {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  })
+  return { data, error }
+}
+
+export const signUp = async (email: string, password: string) => {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password
+  })
+  return { data, error }
+}
+
+export const signOut = async () => {
+  const { error } = await supabase.auth.signOut()
+  return { error }
+}
+
+export const getCurrentUser = async () => {
+  const { data: { user }, error } = await supabase.auth.getUser()
+  return { user, error }
+}
+
+// Real-time subscriptions
+export const subscribeToAssetStateChanges = (callback: () => void) => {
+  const subscription = supabase
+    .channel('asset_states_changes')
+    .on('postgres_changes', 
+      { event: '*', schema: 'public', table: 'asset_states' },
+      callback
+    )
+    .subscribe()
+  
+  // Return unsubscribe function
+  return () => {
+    subscription.unsubscribe()
+  }
+}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getAssets, getSessions, type Asset, type Session } from '@/lib/localStorage'
+import { getAssets, getSessions, type Asset, type Session } from '@/lib/database'
 
 interface ReportData {
   asset: Asset
@@ -15,10 +15,11 @@ export default function Reports() {
   const [reportData, setReportData] = useState<ReportData[]>([])
   const [loading, setLoading] = useState(true)
 
-  const loadReportData = () => {
+  const loadReportData = async () => {
     try {
       // Get all bikes first
-      const bikes = getAssets().filter(asset => asset.type === 'bike' && asset.active)
+      const allAssets = await getAssets()
+      const bikes = allAssets.filter(asset => asset.type === 'bike' && asset.active)
       
       // Calculate date ranges
       const now = new Date()
@@ -26,14 +27,15 @@ export default function Reports() {
       const weekStart = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000)
 
       // Get all sessions for the past week
-      const allSessions = getSessions().filter(session => {
+      const allSessions = await getSessions()
+      const filteredSessions = allSessions.filter(session => {
         const checkedOutDate = new Date(session.checked_out_at)
         return checkedOutDate >= weekStart && session.returned_at !== null
       })
 
       // Process data for each bike
       const processedData: ReportData[] = bikes.map((bike) => {
-        const bikeSessions = allSessions.filter(session => session.asset_id === bike.id)
+        const bikeSessions = filteredSessions.filter(session => session.asset_id === bike.id)
         
         const todaySessions = bikeSessions.filter(session => 
           new Date(session.checked_out_at) >= todayStart

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import { 
-  initializeData, 
+  initializeUserData, 
   getAssetsWithState, 
   updateAssetState, 
   createSession, 
@@ -11,7 +11,7 @@ import {
   getAssetStates,
   subscribeToAssetStateChanges,
   type AssetsWithState 
-} from '@/lib/localStorage'
+} from '@/lib/database'
 
 interface AssetButtonProps {
   asset: AssetsWithState
@@ -53,9 +53,9 @@ export default function LiveInventory() {
   const { currentStation } = useApp()
 
   // Load assets with their current state
-  const loadAssets = () => {
+  const loadAssets = async () => {
     try {
-      const assetsData = getAssetsWithState()
+      const assetsData = await getAssetsWithState()
       setAssets(assetsData)
     } catch (error) {
       console.error('Error loading assets:', error)
@@ -71,19 +71,19 @@ export default function LiveInventory() {
     try {
       if (currentlyInUse) {
         // Asset is being returned
-        const states = getAssetStates()
+        const states = await getAssetStates()
         const currentState = states.find(state => state.asset_id === assetId)
 
         if (currentState?.current_session_id) {
           // Update session with return information
-          updateSession(currentState.current_session_id, {
+          await updateSession(currentState.current_session_id, {
             returned_at: new Date().toISOString(),
             returned_station: currentStation
           })
         }
 
         // Update asset state
-        updateAssetState(assetId, {
+        await updateAssetState(assetId, {
           in_use: false,
           current_session_id: null
         })
@@ -91,25 +91,24 @@ export default function LiveInventory() {
       } else {
         // Asset is being checked out
         // First create a new session
-        const newSession = createSession({
+        const newSession = await createSession({
           asset_id: assetId,
           checked_out_at: new Date().toISOString(),
-          returned_at: null,
           checked_out_station: currentStation,
-          returned_station: null,
-          checked_out_by: null,
-          returned_by: null
+          checked_out_by: null
         })
 
         // Update asset state
-        updateAssetState(assetId, {
-          in_use: true,
-          current_session_id: newSession.id
-        })
+        if (newSession) {
+          await updateAssetState(assetId, {
+            in_use: true,
+            current_session_id: newSession.id
+          })
+        }
       }
 
       // Refresh assets
-      loadAssets()
+      await loadAssets()
     } catch (error) {
       console.error('Error toggling asset status:', error)
     } finally {
@@ -119,11 +118,22 @@ export default function LiveInventory() {
 
   // Set up real-time subscription and initialize data
   useEffect(() => {
-    initializeData()
-    loadAssets()
+    const initializeAndLoad = async () => {
+      try {
+        await initializeUserData()
+        await loadAssets()
+      } catch (error) {
+        console.error('Error initializing data:', error)
+        setLoading(false)
+      }
+    }
 
-    // Subscribe to asset state changes for cross-tab updates
-    const unsubscribe = subscribeToAssetStateChanges(loadAssets)
+    initializeAndLoad()
+
+    // Subscribe to asset state changes for real-time updates
+    const unsubscribe = subscribeToAssetStateChanges(() => {
+      loadAssets()
+    })
     
     return unsubscribe
   }, [])

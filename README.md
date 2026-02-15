@@ -1,172 +1,141 @@
 # Rentals Management System
 
-A responsive web application for managing bike and helmet inventory, optimized for iPad usage. No external database required - all data is stored locally in the browser.
+A modern bike and helmet rental management system built with Next.js and Supabase, designed specifically for iPad use with cross-device synchronization.
 
-## 🌟 Features
+## 🎯 Key Features
 
-- **Live Inventory**: Grid view of all bikes (01-40) and helmets (01-60) with real-time availability status
-- **Reports**: Usage analytics for today and last 7 days with CSV export functionality  
-- **Cross-Tab Updates**: Real-time synchronization across multiple browser tabs using localStorage events
-- **Station Selector**: Switch between Front Desk and Bike Park stations (persisted locally)
-- **Simple Authentication**: PIN-based access control (default: 1234)
-- **Offline Ready**: Works completely offline - no internet connection required after initial load
+- **Cross-Device Sync**: Access your data from any device - reports and inventory status sync automatically
+- **Real-Time Updates**: Changes appear instantly on all connected devices
+- **Live Inventory Management**: Easy-to-use interface for checking bikes and helmets in/out
+- **Comprehensive Reports**: Track usage statistics with daily and weekly summaries
+- **User Authentication**: Secure email/password login system
+- **Station Management**: Support for multiple stations (frontdesk, bikepark)
+- **CSV Export**: Export usage reports for further analysis
 
-## 🚀 Live Demo
+## 🗂️ What Changed
 
-Visit the live demo at: `https://yourusername.github.io/rentals/`
+This project has been upgraded from local storage to cloud-based data storage:
 
-## 📋 How It Works
+### Before (Local Storage)
+- ❌ Data stored only on current device
+- ❌ Reports separate for each iPad
+- ❌ No cross-device synchronization
+- ❌ Simple PIN authentication
 
-1. **First Visit**: App automatically creates sample data (40 bikes + 60 helmets) 
-2. **Asset Management**: Tap any asset button to toggle between Available/In Use
-3. **Session Tracking**: Each checkout/return creates a session record with timestamps and station info
-4. **Data Persistence**: All data stored in browser's localStorage - survives page refreshes
-5. **Cross-Tab Sync**: Changes in one tab instantly appear in other open tabs
+### After (Supabase Cloud Database)
+- ✅ Data synced across all devices
+- ✅ Reports accessible from anywhere
+- ✅ Real-time cross-device updates
+- ✅ Secure email/password authentication
+- ✅ Cloud backup of all data
 
-## 🛠 Tech Stack
+## 🚀 Quick Start
 
-- **Frontend**: Next.js 14 with React and TypeScript
-- **Styling**: Tailwind CSS for responsive design
-- **Data**: localStorage with cross-tab event synchronization 
-- **Deployment**: GitHub Pages with static export
+### 1. Set Up Supabase (Required for cross-device sync)
 
-## 🏃‍♂️ Quick Start
-
-### Development
+1. Create a free account at [supabase.com](https://supabase.com/)
+2. Create a new project
+3. In the SQL Editor, run the contents of `supabase-schema.sql`
+4. Get your project URL and API key from Settings → API
+5. Update `.env.local` with your credentials:
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/rentals.git
-cd rentals
+NEXT_PUBLIC_SUPABASE_URL=your_actual_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_actual_supabase_anon_key
+```
 
+### 2. Install and Run
+
+```bash
 # Install dependencies
 npm install
 
 # Start development server
 npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+### 3. First Time Setup
 
-### Deployment to GitHub Pages
-
-1. **Fork this repository** or create your own from this template
-
-2. **Enable GitHub Pages**:
-   - Go to your repository Settings
-   - Navigate to "Pages" section
-   - Set Source to "GitHub Actions"
-
-3. **Deploy**:
-   ```bash
-   git add .
-   git commit -m "Initial commit"
-   git push origin main
-   ```
-
-4. **Access your site** at: `https://yourusername.github.io/rentals/`
-
-The GitHub Action will automatically build and deploy your site whenever you push to the main branch.
+1. Open the app in your browser
+2. Sign up for a new account
+3. The system will automatically create 40 bikes and 60 helmets
+4. Start tracking rentals!
 
 ## 📱 Usage
 
 ### Authentication
-- Default PIN: `1234`
-- Can be customized in the code or environment variable
+- Sign up with email/password on first use
+- Sign in from any device with the same credentials
+- All your data will be available across devices
 
-### Managing Inventory
-- **Green buttons**: Available assets
-- **Red buttons**: Assets currently in use  
-- **Tap to toggle**: Instantly switch between available/in-use
-- **Station tracking**: Records which station (Front Desk/Bike Park) handled each transaction
+### Inventory Management
+- **Green items**: Available for checkout
+- **Red items**: Currently in use
+- Tap any item to check in/out
+- Changes sync automatically to all devices
 
 ### Reports
-- View today's usage statistics
-- See 7-day rolling totals
-- Export detailed CSV reports
-- All calculations done in real-time from stored session data
+- View daily and weekly usage statistics
+- Export data as CSV files
+- Reports are shared across all your devices
 
-### Data Management
-- **Automatic initialization**: Sample data created on first visit
-- **Persistent storage**: Data survives browser restarts
-- **Cross-tab sync**: Changes sync instantly across tabs
-- **Manual reset**: Clear browser data to reset to initial state
+### Settings
+- Configure session timeout (how long you stay logged in)
+- Switch between stations (frontdesk, bikepark)
+- Logout securely
 
-## 🔧 Customization
+## 📋 Database Schema
 
-### Changing Asset Counts
+The system uses these main tables:
+- **assets**: Bikes and helmets with user isolation
+- **asset_states**: Current status of each item
+- **sessions**: Rental history and tracking
 
-Edit `src/lib/localStorage.ts` to adjust the number of bikes or helmets:
+All data is secured with Row Level Security (RLS) - users can only access their own data.
 
-```typescript
-// Current: 40 bikes, 60 helmets
-const bikes: Asset[] = Array.from({ length: 40 }, ...)
-const helmets: Asset[] = Array.from({ length: 60 }, ...)
-```
+## 🔧 Configuration Files
 
-### Changing Default PIN
+- `/.env.local` - Supabase credentials
+- `/supabase-schema.sql` - Database setup script
+- `/SUPABASE_SETUP.md` - Detailed setup instructions
 
-Update `src/components/AuthScreen.tsx`:
+## 🛠️ Development
 
-```typescript
-const correctPin = '1234' // Change this value
-```
+Built with:
+- **Next.js 14** - React framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **Supabase** - Database and authentication
 
-### Customizing Stations
+## 📖 Documentation
 
-Modify station names in `src/components/StationSelector.tsx`.
-
-## 🏗 Architecture
-
-### Data Structure
-- **Assets**: Bike/helmet definitions with ID, type, label
-- **Asset States**: Current availability status for each asset
-- **Sessions**: Historical checkout/return records with timestamps
-
-### Real-time Updates
-- Uses browser's `storage` event to sync changes across tabs
-- Custom event dispatching for same-tab updates
-- No polling or external dependencies required
-
-### File Structure
-```
-src/
-├── components/          # React components
-├── contexts/           # React context providers
-├── lib/               # Local storage utilities
-└── app/               # Next.js app router pages
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Make your changes
-4. Test locally: `npm run dev`
-5. Build and verify: `npm run build`
-6. Submit a pull request
-
-## 📄 License
-
-MIT License - feel free to use this project for any purpose.
+For detailed setup instructions, see:
+- `SUPABASE_SETUP.md` - Complete Supabase configuration guide
+- `supabase-schema.sql` - Database schema
 
 ## 🆘 Troubleshooting
 
-### Data Not Persisting
-- Check if browser has localStorage enabled
-- Ensure you're not in private/incognito mode
-- Some browsers limit localStorage in file:// URLs
+### "Setup Required" Screen
+- Make sure you've created a Supabase project
+- Update `.env.local` with your actual credentials
+- Restart the development server
 
-### Cross-Tab Sync Not Working  
-- Only works across tabs from same origin
-- localStorage events don't fire in the tab that makes the change (by design)
-- Verify you're not blocking JavaScript
+### Authentication Issues
+- Verify your Supabase project is configured correctly
+- Check that you've run the SQL schema
+- Ensure your email is verified (check spam folder)
 
-### GitHub Pages Deployment Issues
-- Ensure repository is public or you have GitHub Pro
-- Check Actions tab for build logs
-- Verify Pages setting is set to "GitHub Actions"
+### Data Not Syncing
+- Check internet connection on both devices
+- Ensure both devices are signed in to the same account
+- Try refreshing the page
 
----
+## 📄 License
 
-**Perfect for**: Bike rental shops, equipment libraries, inventory management, or any business that needs simple asset tracking without complex databases.
+This project is private and proprietary.

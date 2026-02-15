@@ -10,12 +10,6 @@ export const metadata: Metadata = {
   description: 'Bike and Helmet Rental Inventory Management System',
 }
 
-export const viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  userScalable: false,
-}
-
 export default function RootLayout({
   children,
 }: {

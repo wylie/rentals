@@ -6,10 +6,25 @@ import Navigation from './Navigation'
 import LiveInventory from './LiveInventory'
 import Reports from './Reports'
 import AuthScreen from './AuthScreen'
+import SupabaseConfigNotice from './SupabaseConfigNotice'
+import { isSupabaseConfigured } from '@/lib/supabase'
 
 export default function MainApp() {
   const [currentView, setCurrentView] = useState<'inventory' | 'reports'>('inventory')
-  const { isAuthenticated } = useApp()
+  const { isAuthenticated, loading } = useApp()
+
+  // Show configuration notice if Supabase is not configured
+  if (!isSupabaseConfigured()) {
+    return <SupabaseConfigNotice />
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-lg">Loading...</div>
+      </div>
+    )
+  }
 
   if (!isAuthenticated) {
     return <AuthScreen />

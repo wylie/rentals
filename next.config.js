@@ -1,9 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-  basePath: '/rentals',
-  assetPrefix: '/rentals',
-  trailingSlash: true,
+  // Temporarily disable basePath for development to fix email confirmation links
+  // Uncomment these lines for production deployment to GitHub Pages:
+  // output: 'export',
+  // basePath: '/rentals',
+  // assetPrefix: '/rentals',
+  // trailingSlash: true,
   images: {
     unoptimized: true
   },

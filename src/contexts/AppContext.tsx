@@ -1,6 +1,9 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { User } from '@supabase/supabase-js'
+import { initializeUserData, signOut as dbSignOut } from '@/lib/database'
 
 type Station = 'frontdesk' | 'bikepark'
 
@@ -8,98 +11,111 @@ interface AppContextType {
   isAuthenticated: boolean
   currentStation: Station
   sessionTimeoutHours: number
-  setAuthenticated: (auth: boolean) => void
+  user: User | null
+  loading: boolean
   setStation: (station: Station) => void
   setSessionTimeout: (hours: number) => void
-  logout: () => void
+  signIn: (email: string, password: string) => Promise<{ error?: any }>
+  signUp: (email: string, password: string) => Promise<{ error?: any }>
+  logout: () => Promise<void>
 }
 
-// Authentication storage utilities
-const AUTH_STORAGE_KEY = 'rental_auth'
+// Station and session timeout storage
+const STATION_STORAGE_KEY = 'currentStation'
 const SESSION_TIMEOUT_KEY = 'rental_session_timeout'
-
-interface AuthData {
-  authenticated: boolean
-  timestamp: number
-}
-
-function saveAuthData(authenticated: boolean): void {
-  const authData: AuthData = {
-    authenticated,
-    timestamp: Date.now()
-  }
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData))
-}
-
-function getAuthData(): AuthData | null {
-  try {
-    const stored = localStorage.getItem(AUTH_STORAGE_KEY)
-    if (!stored) return null
-    return JSON.parse(stored) as AuthData
-  } catch {
-    return null
-  }
-}
-
-function clearAuthData(): void {
-  localStorage.removeItem(AUTH_STORAGE_KEY)
-}
-
-function isAuthValid(authData: AuthData, timeoutHours: number): boolean {
-  const now = Date.now()
-  const timeoutMs = timeoutHours * 60 * 60 * 1000 // Convert hours to milliseconds
-  return (now - authData.timestamp) < timeoutMs
-}
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
   const [currentStation, setCurrentStation] = useState<Station>('frontdesk')
   const [sessionTimeoutHours, setSessionTimeoutHours] = useState(4) // Default 4 hours
 
-  // Load station and auth from localStorage on mount
+  const isAuthenticated = !!user
+
+  // Load preferences and initialize auth on mount
   useEffect(() => {
     // Load station preference
-    const savedStation = localStorage.getItem('currentStation') as Station
-    if (savedStation && (savedStation === 'frontdesk' || savedStation === 'bikepark')) {
-      setCurrentStation(savedStation)
-    }
+    if (typeof window !== 'undefined') {
+      const savedStation = localStorage.getItem(STATION_STORAGE_KEY) as Station
+      if (savedStation && (savedStation === 'frontdesk' || savedStation === 'bikepark')) {
+        setCurrentStation(savedStation)
+      }
 
-    // Load session timeout setting
-    const savedTimeout = localStorage.getItem(SESSION_TIMEOUT_KEY)
-    if (savedTimeout) {
-      const timeoutHours = parseFloat(savedTimeout)
-      if (timeoutHours > 0 && timeoutHours <= 168) { // Max 1 week
-        setSessionTimeoutHours(timeoutHours)
+      // Load session timeout setting
+      const savedTimeout = localStorage.getItem(SESSION_TIMEOUT_KEY)
+      if (savedTimeout) {
+        const timeoutHours = parseFloat(savedTimeout)
+        if (timeoutHours > 0 && timeoutHours <= 168) { // Max 1 week
+          setSessionTimeoutHours(timeoutHours)
+        }
       }
     }
 
-    // Check for valid authentication
-    const authData = getAuthData()
-    if (authData && authData.authenticated) {
-      const timeoutHours = savedTimeout ? parseFloat(savedTimeout) : 4
-      if (isAuthValid(authData, timeoutHours)) {
-        setIsAuthenticated(true)
-      } else {
-        // Auth expired, clear it
-        clearAuthData()
+    // Only initialize Supabase auth if properly configured
+    if (!isSupabaseConfigured()) {
+      setLoading(false)
+      return () => {} // Return empty cleanup function
+    }
+
+    let subscription: any = null
+
+    // Initialize Supabase auth
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        setUser(session?.user || null)
+        setLoading(false)
+
+        // Initialize user data if they're authenticated and it's their first time
+        if (session?.user) {
+          try {
+            await initializeUserData()
+          } catch (error) {
+            console.error('Error initializing user data:', error)
+          }
+        }
+      } catch (error) {
+        console.error('Error getting session:', error)
+        setLoading(false)
+      }
+    }
+
+    initializeAuth()
+
+    // Listen to auth changes only if Supabase is configured
+    try {
+      const { data: authSubscription } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          setUser(session?.user || null)
+          setLoading(false)
+
+          // Initialize user data for new sign-ups
+          if (event === 'SIGNED_IN' && session?.user) {
+            try {
+              await initializeUserData()
+            } catch (error) {
+              console.error('Error initializing user data:', error)
+            }
+          }
+        }
+      )
+      subscription = authSubscription
+    } catch (error) {
+      console.error('Error setting up auth listener:', error)
+    }
+
+    return () => {
+      if (subscription && typeof subscription.unsubscribe === 'function') {
+        subscription.unsubscribe()
       }
     }
   }, [])
 
-  const setAuthenticated = (auth: boolean) => {
-    setIsAuthenticated(auth)
-    if (auth) {
-      saveAuthData(true)
-    } else {
-      clearAuthData()
-    }
-  }
-
   const setStation = (station: Station) => {
     setCurrentStation(station)
-    localStorage.setItem('currentStation', station)
+    localStorage.setItem(STATION_STORAGE_KEY, station)
   }
 
   const setSessionTimeout = (hours: number) => {
@@ -109,9 +125,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const logout = () => {
-    setIsAuthenticated(false)
-    clearAuthData()
+  const signIn = async (email: string, password: string) => {
+    if (!isSupabaseConfigured()) {
+      return { error: new Error('Supabase is not configured') }
+    }
+    
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    })
+    return { error }
+  }
+
+  const signUp = async (email: string, password: string) => {
+    if (!isSupabaseConfigured()) {
+      return { error: new Error('Supabase is not configured') }
+    }
+    
+    const { error } = await supabase.auth.signUp({
+      email,
+      password
+    })
+    return { error }
+  }
+
+  const logout = async () => {
+    if (isSupabaseConfigured()) {
+      await dbSignOut()
+    }
+    setUser(null)
   }
 
   return (
@@ -119,9 +161,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       isAuthenticated,
       currentStation,
       sessionTimeoutHours,
-      setAuthenticated,
+      user,
+      loading,
       setStation,
       setSessionTimeout,
+      signIn,
+      signUp,
       logout
     }}>
       {children}
