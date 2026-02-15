@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+const appLoginEmail = process.env.NEXT_PUBLIC_APP_LOGIN_EMAIL || ''
 
 // Check if we have valid Supabase configuration
 const hasValidConfig = supabaseUrl !== 'https://placeholder.supabase.co' && 
@@ -22,6 +23,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Helper to check if Supabase is properly configured
 export const isSupabaseConfigured = () => hasValidConfig
+export const isAppLoginEmailConfigured = () => appLoginEmail.includes('@')
+export const getAppLoginEmail = () => appLoginEmail
 
 // Database types
 export interface Database {

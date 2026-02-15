@@ -16,7 +16,13 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
   const [tempBikeCount, setTempBikeCount] = useState('')
   const [tempHelmetCount, setTempHelmetCount] = useState('')
   const [isUpdatingFleet, setIsUpdatingFleet] = useState(false)
-  const { sessionTimeoutHours, setSessionTimeout, logout } = useApp()
+  const [currentPin, setCurrentPin] = useState('')
+  const [newPin, setNewPin] = useState('')
+  const [confirmPin, setConfirmPin] = useState('')
+  const [pinMessage, setPinMessage] = useState('')
+  const [pinError, setPinError] = useState('')
+  const [isUpdatingPin, setIsUpdatingPin] = useState(false)
+  const { sessionTimeoutHours, setSessionTimeout, changePin, logout } = useApp()
 
   const handleOpenSettings = async () => {
     setTempTimeout(sessionTimeoutHours.toString())
@@ -96,6 +102,38 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
       console.error('Error saving settings:', error)
       alert(`Error updating settings: ${error.message}. Please try again.`)
       setIsUpdatingFleet(false) // Make sure to clear loading state
+    }
+  }
+
+  const handleChangePin = async () => {
+    setPinError('')
+    setPinMessage('')
+
+    if (newPin.trim().length < 4) {
+      setPinError('New PIN must be at least 4 digits')
+      return
+    }
+    if (newPin !== confirmPin) {
+      setPinError('New PIN and confirmation do not match')
+      return
+    }
+
+    setIsUpdatingPin(true)
+    try {
+      const { error } = await changePin(currentPin.trim(), newPin.trim())
+      if (error) {
+        setPinError(error.message || 'Failed to update PIN')
+        return
+      }
+
+      setPinMessage('PIN updated successfully')
+      setCurrentPin('')
+      setNewPin('')
+      setConfirmPin('')
+    } catch (error) {
+      setPinError('Failed to update PIN')
+    } finally {
+      setIsUpdatingPin(false)
     }
   }
 
@@ -290,6 +328,85 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                       )}
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* PIN Management Section */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">Access PIN</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label htmlFor="currentPin" className="block text-sm font-medium text-gray-700 mb-1">
+                      Current PIN
+                    </label>
+                    <input
+                      id="currentPin"
+                      type="password"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={currentPin}
+                      onChange={(e) => setCurrentPin(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter current PIN"
+                      disabled={isUpdatingPin}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="newPin" className="block text-sm font-medium text-gray-700 mb-1">
+                      New PIN
+                    </label>
+                    <input
+                      id="newPin"
+                      type="password"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={newPin}
+                      onChange={(e) => setNewPin(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter new PIN"
+                      disabled={isUpdatingPin}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="confirmPin" className="block text-sm font-medium text-gray-700 mb-1">
+                      Confirm New PIN
+                    </label>
+                    <input
+                      id="confirmPin"
+                      type="password"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={confirmPin}
+                      onChange={(e) => setConfirmPin(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Confirm new PIN"
+                      disabled={isUpdatingPin}
+                    />
+                  </div>
+
+                  {pinError && (
+                    <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                      {pinError}
+                    </div>
+                  )}
+
+                  {pinMessage && (
+                    <div className="text-sm text-green-700 bg-green-50 p-2 rounded">
+                      {pinMessage}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleChangePin}
+                    disabled={isUpdatingPin}
+                    className={`w-full py-2 px-4 rounded-md transition-colors ${
+                      isUpdatingPin
+                        ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {isUpdatingPin ? 'Updating PIN...' : 'Update PIN'}
+                  </button>
                 </div>
               </div>
             </div>

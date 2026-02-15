@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { supabase, getAppLoginEmail, isAppLoginEmailConfigured, isSupabaseConfigured } from '@/lib/supabase'
 import { User } from '@supabase/supabase-js'
 import { initializeUserData, signOut as dbSignOut } from '@/lib/database'
 
@@ -11,8 +11,8 @@ interface AppContextType {
   user: User | null
   loading: boolean
   setSessionTimeout: (hours: number) => void
-  signIn: (email: string, password: string) => Promise<{ error?: any }>
-  signUp: (email: string, password: string) => Promise<{ error?: any }>
+  signInWithPin: (pin: string) => Promise<{ error?: any }>
+  changePin: (currentPin: string, newPin: string) => Promise<{ error?: any }>
   logout: () => Promise<void>
 }
 
@@ -108,28 +108,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const signIn = async (email: string, password: string) => {
+  const signInWithPin = async (pin: string) => {
     if (!isSupabaseConfigured()) {
       return { error: new Error('Supabase is not configured') }
     }
-    
+    if (!isAppLoginEmailConfigured()) {
+      return { error: new Error('App login email is not configured') }
+    }
+
+    const email = getAppLoginEmail()
     const { error } = await supabase.auth.signInWithPassword({
       email,
-      password
+      password: pin
     })
     return { error }
   }
 
-  const signUp = async (email: string, password: string) => {
+  const changePin = async (currentPin: string, newPin: string) => {
     if (!isSupabaseConfigured()) {
       return { error: new Error('Supabase is not configured') }
     }
-    
-    const { error } = await supabase.auth.signUp({
+    if (!isAppLoginEmailConfigured()) {
+      return { error: new Error('App login email is not configured') }
+    }
+
+    const email = getAppLoginEmail()
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
-      password
+      password: currentPin
     })
-    return { error }
+    if (signInError) {
+      return { error: new Error('Current PIN is incorrect') }
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPin
+    })
+
+    return { error: updateError }
   }
 
   const logout = async () => {
@@ -146,8 +162,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       user,
       loading,
       setSessionTimeout,
-      signIn,
-      signUp,
+      signInWithPin,
+      changePin,
       logout
     }}>
       {children}

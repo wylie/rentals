@@ -35,6 +35,7 @@ export default function SupabaseConfigNotice() {
                   <li>Create a Supabase account at <a href="https://supabase.com" className="underline text-blue-600" target="_blank" rel="noopener noreferrer">supabase.com</a></li>
                   <li>Set up the database using the provided SQL schema</li>
                   <li>Update your <code className="bg-yellow-100 px-1 rounded">.env.local</code> file with your Supabase credentials</li>
+                  <li>Set the shared app login email for PIN access</li>
                 </ol>
               </div>
             </div>
@@ -46,7 +47,7 @@ export default function SupabaseConfigNotice() {
           <div className="space-y-3 text-sm text-gray-600">
             <p>📖 Check the <code className="bg-gray-100 px-1 rounded">SUPABASE_SETUP.md</code> file for detailed instructions</p>
             <p>🗄️ Use the <code className="bg-gray-100 px-1 rounded">supabase-schema.sql</code> file to set up your database</p>
-            <p>🔧 Update <code className="bg-gray-100 px-1 rounded">.env.local</code> with your Supabase project URL and API key</p>
+            <p>🔧 Update <code className="bg-gray-100 px-1 rounded">.env.local</code> with your Supabase project URL, API key, and app login email</p>
           </div>
         </div>
 

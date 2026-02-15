@@ -22,7 +22,6 @@ This will create all the necessary tables and security policies.
 2. Copy the following values:
    - **Project URL**
    - **anon public key**
-
 ## 4. Configure Environment Variables
 
 1. Open the `.env.local` file in your project
@@ -31,6 +30,7 @@ This will create all the necessary tables and security policies.
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your_actual_supabase_project_url_here
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_actual_supabase_anon_key_here
+NEXT_PUBLIC_APP_LOGIN_EMAIL=shared-login@example.com
 ```
 
 ## 5. Start the Development Server
@@ -42,9 +42,9 @@ npm run dev
 ## What Changed
 
 ### Authentication
-- **Before**: Simple PIN-based authentication stored locally
-- **Now**: Full email/password authentication with Supabase
-- You can now sign up for an account and sign in from any device
+- **Now**: Shared PIN authentication with Supabase
+- A single app login email is used behind the scenes
+- The PIN can be changed from the Settings screen in the app
 
 ### Data Storage
 - **Before**: All data stored in browser's localStorage (device-specific)
@@ -60,10 +60,10 @@ npm run dev
 
 ## First Time Setup
 
-When you first sign up:
-1. Create an account with email/password
-2. The system will automatically create your initial inventory (40 bikes, 60 helmets)
-3. Your reports will start tracking from that point forward
+1. Create a Supabase Auth user for your shared login email
+2. Set its password to the default PIN (1234)
+3. The system will automatically create your initial inventory (40 bikes, 60 helmets)
+4. Your reports will start tracking from that point forward
 
 ## Troubleshooting
 
@@ -74,7 +74,7 @@ Make sure your `.env.local` file has the correct Supabase URL and API key. The f
 If you see authentication errors, make sure you've run the SQL schema in your Supabase project.
 
 ### Real-time Updates
-If changes don't appear immediately on other devices, check your internet connection and ensure both devices are signed in to the same account.
+If changes don't appear immediately on other devices, check your internet connection and ensure both devices use the same PIN.
 
 ## Security
 
