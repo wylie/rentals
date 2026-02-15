@@ -62,7 +62,10 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
       const newBikeCount = parseInt(tempBikeCount, 10)
       const newHelmetCount = parseInt(tempHelmetCount, 10)
       
+      let fleetChanged = false
+      
       if (newBikeCount !== fleetCounts.bikes || newHelmetCount !== fleetCounts.helmets) {
+        fleetChanged = true
         console.log('🔄 Resetting fleet to exact counts...')
         
         // Add timeout to prevent hanging
@@ -101,10 +104,15 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
       
       setShowSettings(false)
       
-      // Small delay before reload to ensure database operations complete
-      setTimeout(() => {
-        window.location.reload()
-      }, 500)
+      // Only reload if fleet counts changed
+      if (fleetChanged) {
+        // Small delay before reload to ensure database operations complete
+        setTimeout(() => {
+          window.location.reload()
+        }, 500)
+      } else {
+        setIsUpdatingFleet(false)
+      }
       
     } catch (error: any) {
       console.error('Error saving settings:', error)
