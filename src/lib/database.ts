@@ -59,15 +59,25 @@ export const cleanupDuplicateAssets = async (): Promise<void> => {
   try {
     const userId = await getCurrentUserId()
     
+    console.log('🔍 Checking for duplicate assets...')
+    
     // Get all assets for user
     const { data: allAssets, error: fetchError } = await supabase
       .from('assets')
       .select('*')
       .eq('user_id', userId)
+      .eq('active', true) // Only check active assets
       .order('id')
     
-    if (fetchError) throw fetchError
-    if (!allAssets || allAssets.length === 0) return
+    if (fetchError) {
+      console.error('Error fetching assets for cleanup:', fetchError)
+      throw fetchError
+    }
+    
+    if (!allAssets || allAssets.length === 0) {
+      console.log('📭 No assets found for cleanup')
+      return
+    }
     
     // Group by type and label to find duplicates
     const grouped = allAssets.reduce((acc, asset) => {
@@ -97,7 +107,10 @@ export const cleanupDuplicateAssets = async (): Promise<void> => {
         .delete()
         .in('asset_id', assetsToDelete)
       
-      if (statesDeleteError) throw statesDeleteError
+      if (statesDeleteError) {
+        console.error('Error deleting asset states:', statesDeleteError)
+        throw statesDeleteError
+      }
       
       // Delete the duplicate assets
       const { error: assetsDeleteError } = await supabase
@@ -105,15 +118,48 @@ export const cleanupDuplicateAssets = async (): Promise<void> => {
         .delete()
         .in('id', assetsToDelete)
       
-      if (assetsDeleteError) throw assetsDeleteError
+      if (assetsDeleteError) {
+        console.error('Error deleting duplicate assets:', assetsDeleteError)
+        throw assetsDeleteError
+      }
       
       console.log(`✅ Cleaned up ${assetsToDelete.length} duplicate assets`)
     } else {
       console.log('✅ No duplicate assets found')
     }
     
+    // Also clean up orphaned asset states (states without corresponding active assets)
+    console.log('🧹 Cleaning up orphaned asset states...')
+    
+    if (allAssets.length > 0) {
+      const activeAssetIds = allAssets.map(a => a.id)
+      const { data: orphanedStates, error: orphanError } = await supabase
+        .from('asset_states')
+        .select('id, asset_id')
+        .eq('user_id', userId)
+        .not('asset_id', 'in', `(${activeAssetIds.join(',')})`)
+      
+      if (orphanError) {
+        console.error('Error finding orphaned states:', orphanError)
+        // Don't throw here, just log the error
+      } else if (orphanedStates && orphanedStates.length > 0) {
+        console.log(`🗑️  Found ${orphanedStates.length} orphaned asset states`)
+        const { error: cleanupError } = await supabase
+          .from('asset_states')
+          .delete()
+          .in('id', orphanedStates.map(s => s.id))
+        
+        if (cleanupError) {
+          console.error('Error cleaning orphaned states:', cleanupError)
+          // Don't throw here, just log the error
+        } else {
+          console.log(`✅ Cleaned up ${orphanedStates.length} orphaned asset states`)
+        }
+      }
+    }
+    
   } catch (error) {
-    console.error('Error cleaning up duplicates:', error)
+    console.error('❌ Error in cleanupDuplicateAssets:', error)
     throw error
   }
 }

@@ -144,16 +144,53 @@ export default function LiveInventory() {
   useEffect(() => {
     const initializeAndLoad = async () => {
       try {
+        console.log('🚀 Starting initialization...')
         await initializeUserData()
-        await cleanupDuplicateAssets() // Clean up any duplicates
+        console.log('✅ User data initialized')
+        
+        console.log('🧹 Cleaning up duplicates...')
+        // Add a timeout to cleanup to prevent hanging
+        try {
+          await Promise.race([
+            cleanupDuplicateAssets(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Cleanup timeout')), 10000))
+          ])
+          console.log('✅ Duplicates cleaned up')
+        } catch (cleanupError) {
+          console.warn('⚠️ Cleanup failed, continuing anyway:', cleanupError)
+          // Continue even if cleanup fails
+        }
+        
+        console.log('📦 Loading assets...')
         await loadAssets()
+        console.log('✅ Assets loaded successfully')
       } catch (error) {
-        console.error('Error initializing data:', error)
-        setLoading(false)
+        console.error('❌ Error in initializeAndLoad:', error)
+        setLoading(false) // Make sure loading state is cleared even on error
       }
     }
 
-    initializeAndLoad()
+    // Add a safety timeout for the entire initialization
+    const safeInitialize = async () => {
+      try {
+        await Promise.race([
+          initializeAndLoad(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Initialization timeout')), 15000))
+        ])
+      } catch (error) {
+        console.error('❌ Initialization failed or timed out:', error)
+        setLoading(false)
+        // Try a simple asset load as fallback
+        try {
+          console.log('🔄 Trying fallback asset load...')
+          await loadAssets()
+        } catch (fallbackError) {
+          console.error('❌ Fallback load also failed:', fallbackError)
+        }
+      }
+    }
+
+    safeInitialize()
 
     // Subscribe to asset state changes for real-time updates
     const unsubscribe = subscribeToAssetStateChanges(() => {
