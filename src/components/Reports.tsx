@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { clearSessions, getAssets, getSessions, type Asset, type Session } from '@/lib/database'
 
 interface ReportData {
@@ -11,11 +11,10 @@ interface ReportData {
   weekSessions: number
 }
 
-export default function Reports() {
+const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) => {
   const [reportData, setReportData] = useState<ReportData[]>([])
   const [loading, setLoading] = useState(true)
   const [assetType, setAssetType] = useState<'bike' | 'helmet'>('bike')
-  const [isClearing, setIsClearing] = useState(false)
 
   const loadReportData = async () => {
     try {
@@ -118,21 +117,20 @@ export default function Reports() {
   }
 
   const handleClearReports = async () => {
-    const confirmed = confirm('This will permanently delete all usage history. Continue?')
-    if (!confirmed) return
-
-    setIsClearing(true)
+    setLoading(true)
     try {
       await clearSessions()
-      setLoading(true)
       await loadReportData()
     } catch (error) {
       console.error('Error clearing reports:', error)
       alert('Failed to clear reports. Please try again.')
-    } finally {
-      setIsClearing(false)
     }
   }
+
+  // Expose clearReports method to parent via ref
+  useImperativeHandle(ref, () => ({
+    clearReports: handleClearReports
+  }))
 
   const formatDuration = (minutes: number): string => {
     if (minutes === 0) return '0m'
@@ -211,19 +209,7 @@ export default function Reports() {
             </button>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={handleClearReports}
-            disabled={isClearing}
-            className={`flex items-center space-x-1 px-4 py-2 rounded-md transition-colors ${
-              isClearing
-                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                : 'bg-red-600 text-white hover:bg-red-700'
-            }`}
-          >
-            <span className="material-symbols-outlined text-lg">delete_sweep</span>
-            <span>{isClearing ? 'Clearing...' : 'Clear Reports'}</span>
-          </button>
+        <div>
           <button
             onClick={exportToCSV}
             className="flex items-center space-x-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
@@ -300,4 +286,8 @@ export default function Reports() {
       </div>
     </div>
   )
-}
+})
+
+Reports.displayName = 'Reports'
+
+export default Reports

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import Navigation from './Navigation'
 import LiveInventory from './LiveInventory'
@@ -12,6 +12,7 @@ import { isSupabaseConfigured } from '@/lib/supabase'
 export default function MainApp() {
   const [currentView, setCurrentView] = useState<'inventory' | 'reports'>('inventory')
   const { isAuthenticated, loading } = useApp()
+  const reportsRef = useRef<{ clearReports: () => Promise<void> }>(null)
 
   // Show configuration notice if Supabase is not configured
   if (!isSupabaseConfigured()) {
@@ -35,13 +36,18 @@ export default function MainApp() {
       <Navigation 
         currentView={currentView}
         onViewChange={setCurrentView}
+        onClearReports={async () => {
+          if (reportsRef.current) {
+            await reportsRef.current.clearReports()
+          }
+        }}
       />
       
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {currentView === 'inventory' ? (
           <LiveInventory />
         ) : (
-          <Reports />
+          <Reports ref={reportsRef} />
         )}
       </main>
     </div>

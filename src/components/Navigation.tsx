@@ -7,11 +7,12 @@ import { getFleetCounts, addAssetsToFleet, removeAssetsFromFleet, forceFleetRese
 interface NavigationProps {
   currentView: 'inventory' | 'reports'
   onViewChange: (view: 'inventory' | 'reports') => void
+  onClearReports?: () => Promise<void>
 }
 
-type SettingsTab = 'session' | 'fleet' | 'pin' | 'company' | 'logout'
+type SettingsTab = 'session' | 'fleet' | 'pin' | 'company' | 'reports' | 'logout'
 
-export default function Navigation({ currentView, onViewChange }: NavigationProps) {
+export default function Navigation({ currentView, onViewChange, onClearReports }: NavigationProps) {
   const [showSettings, setShowSettings] = useState(false)
   const [activeTab, setActiveTab] = useState<SettingsTab>('session')
   const [tempTimeout, setTempTimeout] = useState('')
@@ -263,6 +264,17 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                 >
                   <span className="material-symbols-outlined text-lg">business</span>
                   <span>Company</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('reports')}
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                    activeTab === 'reports'
+                      ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-lg">summarize</span>
+                  <span>Reports</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('logout')}
@@ -539,6 +551,35 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                       </p>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Reports Tab */}
+              {activeTab === 'reports' && (
+                <div className="space-y-4">
+                  <div className="text-center py-8">
+                    <div className="flex justify-center mb-4">
+                      <span className="material-symbols-outlined text-red-600" style={{ fontSize: '48px' }}>delete_sweep</span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Clear All Reports</h3>
+                    <p className="text-sm text-gray-600 mb-6">
+                      This will permanently delete all usage history and session data. This action cannot be undone.
+                    </p>
+                    <button
+                      onClick={async () => {
+                        const confirmed = confirm('This will permanently delete all usage history. Continue?')
+                        if (!confirmed) return
+                        if (onClearReports) {
+                          await onClearReports()
+                          setShowSettings(false)
+                        }
+                      }}
+                      className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
+                    >
+                      <span className="material-symbols-outlined">delete_sweep</span>
+                      <span>Clear All Reports</span>
+                    </button>
+                  </div>
                 </div>
               )}
 
