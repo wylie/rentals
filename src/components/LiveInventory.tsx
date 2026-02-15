@@ -205,28 +205,25 @@ export default function LiveInventory() {
     const timeElapsed = Date.now() - loadStartTime
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <div className="text-lg">Loading inventory...</div>
-        <div className="text-sm text-gray-500">
-          {timeElapsed > 10000 ? (
-            <div className="text-center space-y-3">
-              <p className="text-amber-600">Taking longer than expected...</p>
-              <button
-                onClick={() => {
-                  console.log('🔄 Force refresh requested')
-                  window.location.reload()
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Force Refresh
-              </button>
-              <p className="text-xs text-gray-400">
-                If this keeps happening, check your browser console (F12) for errors
-              </p>
-            </div>
-          ) : (
-            <p>Please wait while we load your assets...</p>
-          )}
-        </div>
+        {timeElapsed > 10000 ? (
+          <div className="text-center space-y-3">
+            <p className="text-amber-600">Loading is taking longer than expected...</p>
+            <button
+              onClick={() => {
+                console.log('🔄 Force refresh requested')
+                window.location.reload()
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Force Refresh
+            </button>
+            <p className="text-xs text-gray-400">
+              If this keeps happening, check your browser console (F12) for errors
+            </p>
+          </div>
+        ) : (
+          <p className="text-lg text-gray-600">Loading inventory...</p>
+        )}
       </div>
     )
   }
