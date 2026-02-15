@@ -656,18 +656,42 @@ export const getCurrentUser = async () => {
   return { user, error }
 }
 
-// Real-time subscriptions
+// Real-time subscriptions for multi-device sync
 export const subscribeToAssetStateChanges = (callback: () => void) => {
   const subscription = supabase
-    .channel('asset_states_changes')
+    .channel('inventory_changes')
     .on('postgres_changes', 
       { event: '*', schema: 'public', table: 'asset_states' },
-      callback
+      (payload) => {
+        console.log('🔄 Asset state changed:', payload)
+        callback()
+      }
     )
-    .subscribe()
+    .on('postgres_changes', 
+      { event: '*', schema: 'public', table: 'assets' },
+      (payload) => {
+        console.log('🔄 Asset changed:', payload)
+        callback()
+      }
+    )
+    .on('postgres_changes', 
+      { event: '*', schema: 'public', table: 'sessions' },
+      (payload) => {
+        console.log('🔄 Session changed:', payload)
+        callback()
+      }
+    )
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('✅ Realtime subscription active')
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('❌ Realtime subscription error')
+      }
+    })
   
   // Return unsubscribe function
   return () => {
+    console.log('🔌 Unsubscribing from realtime updates')
     subscription.unsubscribe()
   }
 }
