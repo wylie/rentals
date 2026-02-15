@@ -285,7 +285,7 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                       step="0.5"
                       value={tempTimeout}
                       onChange={(e) => setTempTimeout(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="4"
                     />
                     <p className="text-xs text-gray-500 mt-1">
@@ -332,7 +332,7 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                         max="999"
                         value={tempBikeCount}
                         onChange={(e) => setTempBikeCount(e.target.value)}
-                        className="w-24 px-3 py-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-semibold"
+                        className="w-24 px-3 py-2 border border-gray-300 rounded-md text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-semibold"
                         disabled={isUpdatingFleet}
                       />
                       <button
@@ -368,7 +368,7 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                         max="999"
                         value={tempHelmetCount}
                         onChange={(e) => setTempHelmetCount(e.target.value)}
-                        className="w-24 px-3 py-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-semibold"
+                        className="w-24 px-3 py-2 border border-gray-300 rounded-md text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-semibold"
                         disabled={isUpdatingFleet}
                       />
                       <button
@@ -428,7 +428,7 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                       pattern="[0-9]*"
                       value={currentPin}
                       onChange={(e) => setCurrentPin(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Enter current PIN"
                       disabled={isUpdatingPin}
                     />
@@ -444,7 +444,7 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                       pattern="[0-9]*"
                       value={newPin}
                       onChange={(e) => setNewPin(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Enter new PIN (min 4 digits)"
                       disabled={isUpdatingPin}
                     />
@@ -460,7 +460,7 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                       pattern="[0-9]*"
                       value={confirmPin}
                       onChange={(e) => setConfirmPin(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Confirm new PIN"
                       disabled={isUpdatingPin}
                     />
@@ -511,7 +511,7 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                       type="text"
                       value={tempCompanyName}
                       onChange={(e) => setTempCompanyName(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="e.g., Acme Rentals"
                       maxLength={50}
                     />
