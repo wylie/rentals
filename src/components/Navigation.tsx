@@ -155,20 +155,37 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
     <>
       <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">
+          <div className="py-3">
+            {/* First Row: Logo and Right Controls */}
+            <div className="flex justify-between items-center mb-3">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900">
                 {companyName && <span className="text-blue-600">{companyName} </span>}
                 Rental Management
               </h1>
+              
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={handleOpenSettings}
+                  className="flex items-center px-2 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                  title="Settings"
+                >
+                  <span className="material-symbols-outlined">settings</span>
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center px-2 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  title="Logout"
+                >
+                  <span className="material-symbols-outlined">logout</span>
+                </button>
+              </div>
             </div>
 
-            {/* Navigation Links */}
-            <div className="flex space-x-4">
+            {/* Second Row: Navigation Links */}
+            <div className="flex space-x-2">
               <button
                 onClick={() => onViewChange('inventory')}
-                className={`flex items-center space-x-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   currentView === 'inventory'
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-700 hover:bg-gray-100'
@@ -179,7 +196,7 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
               </button>
               <button
                 onClick={() => onViewChange('reports')}
-                className={`flex items-center space-x-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   currentView === 'reports'
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-700 hover:bg-gray-100'
@@ -187,24 +204,6 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
               >
                 <span className="material-symbols-outlined text-lg">assessment</span>
                 <span>Reports</span>
-              </button>
-            </div>
-
-            {/* Right side controls */}
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={handleOpenSettings}
-                className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                title="Settings"
-              >
-                <span className="material-symbols-outlined">settings</span>
-              </button>
-              <button
-                onClick={handleLogout}
-                className="flex items-center px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                title="Logout"
-              >
-                <span className="material-symbols-outlined">logout</span>
               </button>
             </div>
           </div>

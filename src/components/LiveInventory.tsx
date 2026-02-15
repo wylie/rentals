@@ -247,7 +247,7 @@ export default function LiveInventory() {
       {/* Bikes Section */}
       <div>
         <h2 className="text-2xl font-bold mb-4 text-gray-800">Bikes</h2>
-        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
           {bikes.map((asset) => (
             <AssetButton
               key={asset.id}
@@ -262,7 +262,7 @@ export default function LiveInventory() {
       {/* Helmets Section */}
       <div>
         <h2 className="text-2xl font-bold mb-4 text-gray-800">Helmets</h2>
-        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
           {helmets.map((asset) => (
             <AssetButton
               key={asset.id}
