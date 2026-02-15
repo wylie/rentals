@@ -25,13 +25,23 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
   const [confirmPin, setConfirmPin] = useState('')
   const [pinMessage, setPinMessage] = useState('')
   const [pinError, setPinError] = useState('')
-  const [isUpdatingPin, setIsUpdatingPin] = useState(false)
   const [tempCompanyName, setTempCompanyName] = useState('')
+  const [clearReportsChecked, setClearReportsChecked] = useState(false)
   const { sessionTimeoutHours, companyName, setSessionTimeout, setCompanyName, changePin, logout } = useApp()
 
   const handleOpenSettings = async () => {
     setTempTimeout(sessionTimeoutHours.toString())
     setTempCompanyName(companyName)
+    
+    // Reset PIN fields and error states
+    setCurrentPin('')
+    setNewPin('')
+    setConfirmPin('')
+    setPinError('')
+    setPinMessage('')
+    
+    // Reset clear reports checkbox
+    setClearReportsChecked(false)
     
     // Load current fleet counts
     try {
@@ -48,6 +58,8 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
 
   const handleSaveSettings = async () => {
     setIsUpdatingFleet(true)
+    setPinError('')
+    setPinMessage('')
     
     try {
       // Update session timeout
@@ -58,6 +70,44 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
 
       // Update company name
       setCompanyName(tempCompanyName)
+      
+      // Update PIN if all fields are filled
+      if (currentPin.trim() || newPin.trim() || confirmPin.trim()) {
+        if (newPin.trim().length < 4) {
+          setPinError('New PIN must be at least 4 digits')
+          setIsUpdatingFleet(false)
+          return
+        }
+        if (newPin !== confirmPin) {
+          setPinError('New PIN and confirmation do not match')
+          setIsUpdatingFleet(false)
+          return
+        }
+        if (currentPin.trim() && newPin.trim()) {
+          const { error } = await changePin(currentPin.trim(), newPin.trim())
+          if (error) {
+            setPinError(error.message || 'Failed to update PIN')
+            setIsUpdatingFleet(false)
+            return
+          }
+          setPinMessage('PIN updated successfully')
+          setCurrentPin('')
+          setNewPin('')
+          setConfirmPin('')
+        }
+      }
+      
+      // Clear reports if checkbox is checked
+      if (clearReportsChecked) {
+        const confirmed = confirm('This will permanently delete all usage history. Continue?')
+        if (confirmed && onClearReports) {
+          await onClearReports()
+          setClearReportsChecked(false)
+        } else {
+          setIsUpdatingFleet(false)
+          return
+        }
+      }
       
       // Update fleet counts using force reset for accuracy
       const newBikeCount = parseInt(tempBikeCount, 10)
@@ -119,38 +169,6 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
       console.error('Error saving settings:', error)
       alert(`Error updating settings: ${error.message}. Please try again.`)
       setIsUpdatingFleet(false) // Make sure to clear loading state
-    }
-  }
-
-  const handleChangePin = async () => {
-    setPinError('')
-    setPinMessage('')
-
-    if (newPin.trim().length < 4) {
-      setPinError('New PIN must be at least 4 digits')
-      return
-    }
-    if (newPin !== confirmPin) {
-      setPinError('New PIN and confirmation do not match')
-      return
-    }
-
-    setIsUpdatingPin(true)
-    try {
-      const { error } = await changePin(currentPin.trim(), newPin.trim())
-      if (error) {
-        setPinError(error.message || 'Failed to update PIN')
-        return
-      }
-
-      setPinMessage('PIN updated successfully')
-      setCurrentPin('')
-      setNewPin('')
-      setConfirmPin('')
-    } catch (error) {
-      setPinError('Failed to update PIN')
-    } finally {
-      setIsUpdatingPin(false)
     }
   }
 
@@ -452,7 +470,6 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
                       onChange={(e) => setCurrentPin(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Enter current PIN"
-                      disabled={isUpdatingPin}
                     />
                   </div>
                   <div>
@@ -468,7 +485,6 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
                       onChange={(e) => setNewPin(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Enter new PIN (min 4 digits)"
-                      disabled={isUpdatingPin}
                     />
                   </div>
                   <div>
@@ -484,7 +500,6 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
                       onChange={(e) => setConfirmPin(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Confirm new PIN"
-                      disabled={isUpdatingPin}
                     />
                   </div>
 
@@ -501,19 +516,6 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
                       <span>{pinMessage}</span>
                     </div>
                   )}
-
-                  <button
-                    onClick={handleChangePin}
-                    disabled={isUpdatingPin}
-                    className={`w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
-                      isUpdatingPin
-                        ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined">lock_reset</span>
-                    <span>{isUpdatingPin ? 'Updating PIN...' : 'Update PIN'}</span>
-                  </button>
                 </div>
               )}
 
@@ -557,28 +559,30 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
               {/* Reports Tab */}
               {activeTab === 'reports' && (
                 <div className="space-y-4">
-                  <div className="text-center py-8">
+                  <div className="py-8">
                     <div className="flex justify-center mb-4">
                       <span className="material-symbols-outlined text-red-600" style={{ fontSize: '48px' }}>delete_sweep</span>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Clear All Reports</h3>
-                    <p className="text-sm text-gray-600 mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">Clear All Reports</h3>
+                    <p className="text-sm text-gray-600 mb-6 text-center">
                       This will permanently delete all usage history and session data. This action cannot be undone.
                     </p>
-                    <button
-                      onClick={async () => {
-                        const confirmed = confirm('This will permanently delete all usage history. Continue?')
-                        if (!confirmed) return
-                        if (onClearReports) {
-                          await onClearReports()
-                          setShowSettings(false)
-                        }
-                      }}
-                      className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
-                    >
-                      <span className="material-symbols-outlined">delete_sweep</span>
-                      <span>Clear All Reports</span>
-                    </button>
+                    
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <label className="flex items-start space-x-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={clearReportsChecked}
+                          onChange={(e) => setClearReportsChecked(e.target.checked)}
+                          className="mt-1 h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm text-gray-900">
+                          <strong>I want to permanently delete all usage history and reports.</strong>
+                          <br />
+                          <span className="text-gray-600">Check this box and click Save Changes to clear all reports.</span>
+                        </span>
+                      </label>
+                    </div>
                   </div>
                 </div>
               )}
@@ -622,7 +626,13 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
                   <span>{isUpdatingFleet ? 'Saving...' : 'Save Changes'}</span>
                 </button>
                 <button
-                  onClick={() => setShowSettings(false)}
+                  onClick={() => {
+                    setShowSettings(false)
+                    // Reset states when canceling
+                    setPinError('')
+                    setPinMessage('')
+                    setClearReportsChecked(false)
+                  }}
                   disabled={isUpdatingFleet}
                   className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
                     isUpdatingFleet
