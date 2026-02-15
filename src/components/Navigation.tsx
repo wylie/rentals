@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import StationSelector from './StationSelector'
+import { getFleetCounts, addAssetsToFleet, removeAssetsFromFleet } from '@/lib/database'
 
 interface NavigationProps {
   currentView: 'inventory' | 'reports'
@@ -12,18 +13,70 @@ interface NavigationProps {
 export default function Navigation({ currentView, onViewChange }: NavigationProps) {
   const [showSettings, setShowSettings] = useState(false)
   const [tempTimeout, setTempTimeout] = useState('')
+  const [fleetCounts, setFleetCounts] = useState({ bikes: 0, helmets: 0 })
+  const [tempBikeCount, setTempBikeCount] = useState('')
+  const [tempHelmetCount, setTempHelmetCount] = useState('')
+  const [isUpdatingFleet, setIsUpdatingFleet] = useState(false)
   const { sessionTimeoutHours, setSessionTimeout, logout } = useApp()
 
-  const handleOpenSettings = () => {
+  const handleOpenSettings = async () => {
     setTempTimeout(sessionTimeoutHours.toString())
+    
+    // Load current fleet counts
+    try {
+      const counts = await getFleetCounts()
+      setFleetCounts(counts)
+      setTempBikeCount(counts.bikes.toString())
+      setTempHelmetCount(counts.helmets.toString())
+    } catch (error) {
+      console.error('Error loading fleet counts:', error)
+    }
+    
     setShowSettings(true)
   }
 
-  const handleSaveSettings = () => {
-    const hours = parseFloat(tempTimeout)
-    if (hours > 0 && hours <= 168) {
-      setSessionTimeout(hours)
+  const handleSaveSettings = async () => {
+    setIsUpdatingFleet(true)
+    
+    try {
+      // Update session timeout
+      const hours = parseFloat(tempTimeout)
+      if (hours > 0 && hours <= 168) {
+        setSessionTimeout(hours)
+      }
+      
+      // Update fleet counts
+      const newBikeCount = parseInt(tempBikeCount, 10)
+      const newHelmetCount = parseInt(tempHelmetCount, 10)
+      
+      if (newBikeCount !== fleetCounts.bikes) {
+        const diff = newBikeCount - fleetCounts.bikes
+        if (diff > 0) {
+          await addAssetsToFleet('bike', diff)
+        } else if (diff < 0) {
+          await removeAssetsFromFleet('bike', Math.abs(diff))
+        }
+      }
+      
+      if (newHelmetCount !== fleetCounts.helmets) {
+        const diff = newHelmetCount - fleetCounts.helmets
+        if (diff > 0) {
+          await addAssetsToFleet('helmet', diff)
+        } else if (diff < 0) {
+          await removeAssetsFromFleet('helmet', Math.abs(diff))
+        }
+      }
+      
       setShowSettings(false)
+      
+      // Reload the page to refresh inventory
+      window.location.reload()
+      
+    } catch (error) {
+      console.error('Error saving settings:', error)
+      alert('Error updating settings. Please try again.')
+    } finally {
+      setIsUpdatingFleet(false)
     }
   }
 
@@ -96,33 +149,129 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
             <h2 className="text-lg font-bold text-gray-900 mb-4">Settings</h2>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Session Timeout Section */}
               <div>
-                <label htmlFor="sessionTimeout" className="block text-sm font-medium text-gray-700 mb-2">
-                  Session Timeout (hours)
-                </label>
-                <input
-                  id="sessionTimeout"
-                  type="number"
-                  min="0.1"
-                  max="168"
-                  step="0.5"
-                  value={tempTimeout}
-                  onChange={(e) => setTempTimeout(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="4"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  How long to stay logged in (0.1 to 168 hours)
-                </p>
-                <div className="mt-2 text-xs text-gray-600">
-                  <p><strong>Quick options:</strong></p>
-                  <div className="flex space-x-2 mt-1">
-                    <button onClick={() => setTempTimeout('1')} className="px-2 py-1 bg-gray-100 rounded text-xs hover:bg-gray-200">1hr</button>
-                    <button onClick={() => setTempTimeout('4')} className="px-2 py-1 bg-gray-100 rounded text-xs hover:bg-gray-200">4hrs</button>
-                    <button onClick={() => setTempTimeout('8')} className="px-2 py-1 bg-gray-100 rounded text-xs hover:bg-gray-200">8hrs</button>
-                    <button onClick={() => setTempTimeout('24')} className="px-2 py-1 bg-gray-100 rounded text-xs hover:bg-gray-200">1day</button>
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">Session Settings</h3>
+                <div>
+                  <label htmlFor="sessionTimeout" className="block text-sm font-medium text-gray-700 mb-2">
+                    Session Timeout (hours)
+                  </label>
+                  <input
+                    id="sessionTimeout"
+                    type="number"
+                    min="0.1"
+                    max="168"
+                    step="0.5"
+                    value={tempTimeout}
+                    onChange={(e) => setTempTimeout(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="4"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    How long to stay logged in (0.1 to 168 hours)
+                  </p>
+                  <div className="mt-2 text-xs text-gray-600">
+                    <p><strong>Quick options:</strong></p>
+                    <div className="flex space-x-2 mt-1">
+                      <button onClick={() => setTempTimeout('1')} className="px-2 py-1 bg-gray-100 rounded text-xs hover:bg-gray-200">1hr</button>
+                      <button onClick={() => setTempTimeout('4')} className="px-2 py-1 bg-gray-100 rounded text-xs hover:bg-gray-200">4hrs</button>
+                      <button onClick={() => setTempTimeout('8')} className="px-2 py-1 bg-gray-100 rounded text-xs hover:bg-gray-200">8hrs</button>
+                      <button onClick={() => setTempTimeout('24')} className="px-2 py-1 bg-gray-100 rounded text-xs hover:bg-gray-200">1day</button>
+                    </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Fleet Management Section */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">Fleet Management</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label htmlFor="bikeCount" className="block text-sm font-medium text-gray-700 mb-1">
+                      🚴‍♂️ Number of Bikes
+                    </label>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => setTempBikeCount(Math.max(0, parseInt(tempBikeCount) - 1).toString())}
+                        className="px-2 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 text-sm font-bold"
+                        disabled={isUpdatingFleet}
+                      >
+                        −
+                      </button>
+                      <input
+                        id="bikeCount"
+                        type="number"
+                        min="0"
+                        max="999"
+                        value={tempBikeCount}
+                        onChange={(e) => setTempBikeCount(e.target.value)}
+                        className="w-20 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={isUpdatingFleet}
+                      />
+                      <button
+                        onClick={() => setTempBikeCount((parseInt(tempBikeCount) + 1).toString())}
+                        className="px-2 py-1 bg-green-100 text-green-600 rounded hover:bg-green-200 text-sm font-bold"
+                        disabled={isUpdatingFleet}
+                      >
+                        +
+                      </button>
+                      <span className="text-xs text-gray-500">
+                        Currently: {fleetCounts.bikes}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="helmetCount" className="block text-sm font-medium text-gray-700 mb-1">
+                      ⛑️ Number of Helmets
+                    </label>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => setTempHelmetCount(Math.max(0, parseInt(tempHelmetCount) - 1).toString())}
+                        className="px-2 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 text-sm font-bold"
+                        disabled={isUpdatingFleet}
+                      >
+                        −
+                      </button>
+                      <input
+                        id="helmetCount"
+                        type="number"
+                        min="0"
+                        max="999"
+                        value={tempHelmetCount}
+                        onChange={(e) => setTempHelmetCount(e.target.value)}
+                        className="w-20 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={isUpdatingFleet}
+                      />
+                      <button
+                        onClick={() => setTempHelmetCount((parseInt(tempHelmetCount) + 1).toString())}
+                        className="px-2 py-1 bg-green-100 text-green-600 rounded hover:bg-green-200 text-sm font-bold"
+                        disabled={isUpdatingFleet}
+                      >
+                        +
+                      </button>
+                      <span className="text-xs text-gray-500">
+                        Currently: {fleetCounts.helmets}
+                      </span>
+                    </div>
+                  </div>
+
+                  {(tempBikeCount !== fleetCounts.bikes.toString() || tempHelmetCount !== fleetCounts.helmets.toString()) && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-xs text-yellow-700">
+                      <p><strong>Changes will be applied when you save:</strong></p>
+                      {tempBikeCount !== fleetCounts.bikes.toString() && (
+                        <p>• Bikes: {fleetCounts.bikes} → {tempBikeCount} 
+                          ({parseInt(tempBikeCount) - fleetCounts.bikes > 0 ? '+' : ''}{parseInt(tempBikeCount) - fleetCounts.bikes})
+                        </p>
+                      )}
+                      {tempHelmetCount !== fleetCounts.helmets.toString() && (
+                        <p>• Helmets: {fleetCounts.helmets} → {tempHelmetCount} 
+                          ({parseInt(tempHelmetCount) - fleetCounts.helmets > 0 ? '+' : ''}{parseInt(tempHelmetCount) - fleetCounts.helmets})
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -130,13 +279,23 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
             <div className="flex space-x-3 mt-6">
               <button
                 onClick={handleSaveSettings}
-                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                disabled={isUpdatingFleet}
+                className={`flex-1 py-2 px-4 rounded-md transition-colors ${
+                  isUpdatingFleet 
+                    ? 'bg-gray-400 text-white cursor-not-allowed' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
               >
-                Save
+                {isUpdatingFleet ? 'Updating Fleet...' : 'Save'}
               </button>
               <button
                 onClick={() => setShowSettings(false)}
-                className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors"
+                disabled={isUpdatingFleet}
+                className={`flex-1 py-2 px-4 rounded-md transition-colors ${
+                  isUpdatingFleet
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                }`}
               >
                 Cancel
               </button>

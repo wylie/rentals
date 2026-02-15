@@ -11,6 +11,9 @@ import {
   getAssetStates,
   subscribeToAssetStateChanges,
   cleanupDuplicateAssets,
+  getFleetCounts,
+  addAssetsToFleet,
+  removeAssetsFromFleet,
   type AssetsWithState 
 } from '@/lib/database'
 

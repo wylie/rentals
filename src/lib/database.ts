@@ -118,6 +118,137 @@ export const cleanupDuplicateAssets = async (): Promise<void> => {
   }
 }
 
+// Get fleet counts (total number of each asset type)
+export const getFleetCounts = async (): Promise<{ bikes: number; helmets: number }> => {
+  try {
+    const userId = await getCurrentUserId()
+    
+    const { data, error } = await supabase
+      .from('assets')
+      .select('type')
+      .eq('user_id', userId)
+      .eq('active', true)
+    
+    if (error) throw error
+    
+    const bikes = data?.filter(asset => asset.type === 'bike').length || 0
+    const helmets = data?.filter(asset => asset.type === 'helmet').length || 0
+    
+    return { bikes, helmets }
+  } catch (error) {
+    console.error('Error getting fleet counts:', error)
+    return { bikes: 0, helmets: 0 }
+  }
+}
+
+// Add new assets to fleet
+export const addAssetsToFleet = async (type: 'bike' | 'helmet', count: number): Promise<void> => {
+  try {
+    const userId = await getCurrentUserId()
+    
+    // Get current highest number for this asset type
+    const { data: existingAssets, error: fetchError } = await supabase
+      .from('assets')
+      .select('label')
+      .eq('user_id', userId)
+      .eq('type', type)
+      .eq('active', true)
+      .order('label')
+    
+    if (fetchError) throw fetchError
+    
+    // Find the highest number
+    let highestNumber = 0
+    if (existingAssets) {
+      const numbers = existingAssets.map(asset => {
+        const match = asset.label.match(/\d+$/)
+        return match ? parseInt(match[0], 10) : 0
+      })
+      highestNumber = Math.max(0, ...numbers)
+    }
+    
+    // Create new assets starting from highestNumber + 1
+    const newAssets = Array.from({ length: count }, (_, i) => ({
+      type,
+      label: `${type === 'bike' ? 'Bike' : 'Helmet'} ${String(highestNumber + i + 1).padStart(2, '0')}`,
+      active: true,
+      user_id: userId
+    }))
+    
+    // Insert new assets
+    const { data: insertedAssets, error: assetsError } = await supabase
+      .from('assets')
+      .insert(newAssets)
+      .select()
+    
+    if (assetsError) throw assetsError
+    
+    // Create initial asset states
+    const assetStates = insertedAssets.map(asset => ({
+      asset_id: asset.id,
+      in_use: false,
+      current_session_id: null,
+      user_id: userId
+    }))
+    
+    const { error: statesError } = await supabase
+      .from('asset_states')
+      .insert(assetStates)
+    
+    if (statesError) throw statesError
+    
+    console.log(`✅ Added ${count} new ${type}s to fleet`)
+  } catch (error) {
+    console.error('Error adding assets to fleet:', error)
+    throw error
+  }
+}
+
+// Remove assets from fleet (marks as inactive)
+export const removeAssetsFromFleet = async (type: 'bike' | 'helmet', count: number): Promise<void> => {
+  try {
+    const userId = await getCurrentUserId()
+    
+    // Get highest numbered assets of this type (LIFO - last in, first out)
+    const { data: assetsToRemove, error: fetchError } = await supabase
+      .from('assets')
+      .select('id, label')
+      .eq('user_id', userId)
+      .eq('type', type)
+      .eq('active', true)
+      .order('label', { ascending: false })
+      .limit(count)
+    
+    if (fetchError) throw fetchError
+    if (!assetsToRemove || assetsToRemove.length === 0) {
+      throw new Error(`No ${type}s available to remove`)
+    }
+    
+    const assetIds = assetsToRemove.map(a => a.id)
+    
+    // Mark assets as inactive rather than deleting (preserves history)
+    const { error: deactivateError } = await supabase
+      .from('assets')
+      .update({ active: false })
+      .in('id', assetIds)
+    
+    if (deactivateError) throw deactivateError
+    
+    // Also remove their asset states (they won't appear in inventory)
+    const { error: statesError } = await supabase
+      .from('asset_states')
+      .delete()
+      .in('asset_id', assetIds)
+    
+    if (statesError) throw statesError
+    
+    console.log(`✅ Removed ${assetsToRemove.length} ${type}s from fleet (${assetsToRemove.map(a => a.label).join(', ')})`)
+  } catch (error) {
+    console.error('Error removing assets from fleet:', error)
+    throw error
+  }
+}
+
 // Initialize data for new user
 export const initializeUserData = async (): Promise<void> => {
   try {
