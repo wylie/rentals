@@ -164,6 +164,65 @@ export const cleanupDuplicateAssets = async (): Promise<void> => {
   }
 }
 
+// Force cleanup and reset fleet to exact counts (for fixing corrupted state)
+export const forceFleetReset = async (bikeCount: number, helmetCount: number): Promise<void> => {
+  try {
+    const userId = await getCurrentUserId()
+    
+    console.log(`🔄 Force resetting fleet to ${bikeCount} bikes and ${helmetCount} helmets...`)
+    
+    // Get current active asset counts
+    const { data: currentAssets, error: fetchError } = await supabase
+      .from('assets')
+      .select('id, type, label')
+      .eq('user_id', userId)
+      .eq('active', true)
+    
+    if (fetchError) throw fetchError
+    
+    const currentBikes = currentAssets?.filter(a => a.type === 'bike') || []
+    const currentHelmets = currentAssets?.filter(a => a.type === 'helmet') || []
+    
+    console.log(`📊 Current: ${currentBikes.length} bikes, ${currentHelmets.length} helmets`)
+    console.log(`🎯 Target: ${bikeCount} bikes, ${helmetCount} helmets`)
+    
+    // Handle bikes
+    if (currentBikes.length > bikeCount) {
+      // Remove excess bikes
+      const excess = currentBikes.length - bikeCount
+      console.log(`🗑️  Need to remove ${excess} bikes`)
+      await removeAssetsFromFleet('bike', excess)
+    } else if (currentBikes.length < bikeCount) {
+      // Add missing bikes
+      const missing = bikeCount - currentBikes.length
+      console.log(`➕ Need to add ${missing} bikes`)
+      await addAssetsToFleet('bike', missing)
+    }
+    
+    // Handle helmets
+    if (currentHelmets.length > helmetCount) {
+      // Remove excess helmets
+      const excess = currentHelmets.length - helmetCount
+      console.log(`🗑️  Need to remove ${excess} helmets`)
+      await removeAssetsFromFleet('helmet', excess)
+    } else if (currentHelmets.length < helmetCount) {
+      // Add missing helmets
+      const missing = helmetCount - currentHelmets.length
+      console.log(`➕ Need to add ${missing} helmets`)
+      await addAssetsToFleet('helmet', missing)
+    }
+    
+    // Clean up any duplicates that might exist
+    await cleanupDuplicateAssets()
+    
+    console.log('✅ Fleet reset complete!')
+    
+  } catch (error) {
+    console.error('❌ Error in forceFleetReset:', error)
+    throw error
+  }
+}
+
 // Get fleet counts (total number of each asset type)
 export const getFleetCounts = async (): Promise<{ bikes: number; helmets: number }> => {
   try {
@@ -255,22 +314,35 @@ export const removeAssetsFromFleet = async (type: 'bike' | 'helmet', count: numb
   try {
     const userId = await getCurrentUserId()
     
-    // Get highest numbered assets of this type (LIFO - last in, first out)
-    const { data: assetsToRemove, error: fetchError } = await supabase
+    // Get all assets of this type and sort them numerically by the number in the label
+    const { data: allAssets, error: fetchError } = await supabase
       .from('assets')
       .select('id, label')
       .eq('user_id', userId)
       .eq('type', type)
       .eq('active', true)
-      .order('label', { ascending: false })
-      .limit(count)
     
     if (fetchError) throw fetchError
-    if (!assetsToRemove || assetsToRemove.length === 0) {
+    if (!allAssets || allAssets.length === 0) {
       throw new Error(`No ${type}s available to remove`)
     }
     
-    const assetIds = assetsToRemove.map(a => a.id)
+    // Sort by numeric value in the label (highest first for LIFO)
+    const sortedAssets = allAssets
+      .map(asset => ({
+        ...asset,
+        numericValue: parseInt(asset.label.match(/\d+$/)?.[0] || '0', 10)
+      }))
+      .sort((a, b) => b.numericValue - a.numericValue)  // Descending order
+      .slice(0, count)  // Take only the count we need to remove
+    
+    if (sortedAssets.length === 0) {
+      throw new Error(`No ${type}s available to remove`)
+    }
+    
+    const assetIds = sortedAssets.map(a => a.id)
+    
+    console.log(`🗑️  Removing ${sortedAssets.length} ${type}s: ${sortedAssets.map(a => a.label).join(', ')}`)
     
     // Mark assets as inactive rather than deleting (preserves history)
     const { error: deactivateError } = await supabase
@@ -288,7 +360,7 @@ export const removeAssetsFromFleet = async (type: 'bike' | 'helmet', count: numb
     
     if (statesError) throw statesError
     
-    console.log(`✅ Removed ${assetsToRemove.length} ${type}s from fleet (${assetsToRemove.map(a => a.label).join(', ')})`)
+    console.log(`✅ Successfully removed ${sortedAssets.length} ${type}s from fleet`)
   } catch (error) {
     console.error('Error removing assets from fleet:', error)
     throw error
@@ -305,6 +377,7 @@ export const initializeUserData = async (): Promise<void> => {
       .from('assets')
       .select('id')
       .eq('user_id', userId)
+      .eq('active', true)  // Only check active assets
       .limit(1)
     
     if (checkError) {
@@ -312,10 +385,10 @@ export const initializeUserData = async (): Promise<void> => {
       throw checkError
     }
     
-    console.log(`🔍 Checking existing assets for user ${userId}:`, existingAssets?.length || 0)
+    console.log(`🔍 Checking existing active assets for user ${userId}:`, existingAssets?.length || 0)
     
     if (existingAssets && existingAssets.length > 0) {
-      console.log('✅ User already has data, skipping initialization')
+      console.log('✅ User already has active data, skipping initialization')
       return // User already has data
     }
     
@@ -407,6 +480,7 @@ export const getAssetsWithState = async (): Promise<AssetsWithState[]> => {
         asset_state:asset_states(*)
       `)
       .eq('user_id', userId)
+      .eq('active', true)  // Only get active assets
       .order('id')
     
     if (error) throw error

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import StationSelector from './StationSelector'
-import { getFleetCounts, addAssetsToFleet, removeAssetsFromFleet } from '@/lib/database'
+import { getFleetCounts, addAssetsToFleet, removeAssetsFromFleet, forceFleetReset } from '@/lib/database'
 
 interface NavigationProps {
   currentView: 'inventory' | 'reports'
@@ -45,26 +45,13 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
         setSessionTimeout(hours)
       }
       
-      // Update fleet counts
+      // Update fleet counts using force reset for accuracy
       const newBikeCount = parseInt(tempBikeCount, 10)
       const newHelmetCount = parseInt(tempHelmetCount, 10)
       
-      if (newBikeCount !== fleetCounts.bikes) {
-        const diff = newBikeCount - fleetCounts.bikes
-        if (diff > 0) {
-          await addAssetsToFleet('bike', diff)
-        } else if (diff < 0) {
-          await removeAssetsFromFleet('bike', Math.abs(diff))
-        }
-      }
-      
-      if (newHelmetCount !== fleetCounts.helmets) {
-        const diff = newHelmetCount - fleetCounts.helmets
-        if (diff > 0) {
-          await addAssetsToFleet('helmet', diff)
-        } else if (diff < 0) {
-          await removeAssetsFromFleet('helmet', Math.abs(diff))
-        }
+      if (newBikeCount !== fleetCounts.bikes || newHelmetCount !== fleetCounts.helmets) {
+        console.log('🔄 Resetting fleet to exact counts...')
+        await forceFleetReset(newBikeCount, newHelmetCount)
       }
       
       setShowSettings(false)
