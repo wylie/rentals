@@ -8,7 +8,6 @@ import {
   createSession, 
   updateSession, 
   getAssetStates,
-  cleanupDuplicateAssets,
   type AssetsWithState 
 } from '@/lib/database'
 
@@ -156,19 +155,6 @@ export default function LiveInventory() {
         await initializeUserData()
         console.log('✅ User data initialized')
         
-        console.log('🧹 Cleaning up duplicates...')
-        // Add a timeout to cleanup to prevent hanging
-        try {
-          await Promise.race([
-            cleanupDuplicateAssets(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Cleanup timeout')), 10000))
-          ])
-          console.log('✅ Duplicates cleaned up')
-        } catch (cleanupError) {
-          console.warn('⚠️ Cleanup failed, continuing anyway:', cleanupError)
-          // Continue even if cleanup fails
-        }
-        
         console.log('📦 Loading assets...')
         await loadAssets()
         console.log('✅ Assets loaded successfully')
@@ -183,7 +169,7 @@ export default function LiveInventory() {
       try {
         await Promise.race([
           initializeAndLoad(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Initialization timeout')), 15000))
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Initialization timeout')), 10000))
         ])
       } catch (error) {
         console.error('❌ Initialization failed or timed out:', error)
