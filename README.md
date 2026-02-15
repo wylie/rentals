@@ -1,4 +1,4 @@
-# Rentals Management System
+# Rental Management System
 
 A modern bike and helmet rental management system built with Next.js and Supabase, designed specifically for iPad use with cross-device synchronization.
 

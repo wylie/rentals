@@ -41,7 +41,7 @@ export default function AuthScreen() {
             <span className="material-symbols-outlined text-6xl text-indigo-600">lock</span>
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Rentals Management
+            Rental Management
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             Enter your PIN to continue

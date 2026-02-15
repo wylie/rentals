@@ -160,7 +160,7 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
             <div className="flex items-center">
               <h1 className="text-xl font-bold text-gray-900">
                 {companyName && <span className="text-blue-600">{companyName} </span>}
-                Rentals Management
+                Rental Management
               </h1>
             </div>
 
@@ -526,7 +526,7 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                       <p className="text-xs text-gray-600 mb-2">Preview:</p>
                       <p className="text-lg font-bold">
                         <span className="text-blue-600">{tempCompanyName} </span>
-                        <span className="text-gray-900">Rentals Management</span>
+                        <span className="text-gray-900">Rental Management</span>
                       </p>
                     </div>
                   )}

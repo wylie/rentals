@@ -6,7 +6,7 @@ import { AppProvider } from '@/contexts/AppContext'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Rentals Management',
+  title: 'Rental Management',
   description: 'Bike and Helmet Rental Inventory Management System',
 }
 
