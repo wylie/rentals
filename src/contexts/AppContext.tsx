@@ -8,16 +8,19 @@ import { initializeUserData, signOut as dbSignOut } from '@/lib/database'
 interface AppContextType {
   isAuthenticated: boolean
   sessionTimeoutHours: number
+  companyName: string
   user: User | null
   loading: boolean
   setSessionTimeout: (hours: number) => void
+  setCompanyName: (name: string) => void
   signInWithPin: (pin: string) => Promise<{ error?: any }>
   changePin: (currentPin: string, newPin: string) => Promise<{ error?: any }>
   logout: () => Promise<void>
 }
 
-// Session timeout storage
+// Storage keys
 const SESSION_TIMEOUT_KEY = 'rental_session_timeout'
+const COMPANY_NAME_KEY = 'rental_company_name'
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
@@ -25,6 +28,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [sessionTimeoutHours, setSessionTimeoutHours] = useState(4) // Default 4 hours
+  const [companyName, setCompanyNameState] = useState('')
 
   const isAuthenticated = !!user
 
@@ -38,6 +42,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (timeoutHours > 0 && timeoutHours <= 168) { // Max 1 week
           setSessionTimeoutHours(timeoutHours)
         }
+      }
+
+      // Load company name setting
+      const savedCompanyName = localStorage.getItem(COMPANY_NAME_KEY)
+      if (savedCompanyName) {
+        setCompanyNameState(savedCompanyName)
       }
     }
 
@@ -108,6 +118,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const setCompanyName = (name: string) => {
+    setCompanyNameState(name)
+    localStorage.setItem(COMPANY_NAME_KEY, name)
+  }
+
   const signInWithPin = async (pin: string) => {
     if (!isSupabaseConfigured()) {
       return { error: new Error('Supabase is not configured') }
@@ -159,9 +174,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{
       isAuthenticated,
       sessionTimeoutHours,
+      companyName,
       user,
       loading,
       setSessionTimeout,
+      setCompanyName,
       signInWithPin,
       changePin,
       logout

@@ -189,23 +189,25 @@ export default function Reports() {
           <div className="inline-flex rounded-md shadow-sm" role="group">
             <button
               onClick={() => setAssetType('bike')}
-              className={`px-3 py-2 text-sm font-medium border rounded-l-md transition-colors ${
+              className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-l-md transition-colors ${
                 assetType === 'bike'
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
               }`}
             >
-              Bikes
+              <span className="material-symbols-outlined text-lg">pedal_bike</span>
+              <span>Bikes</span>
             </button>
             <button
               onClick={() => setAssetType('helmet')}
-              className={`px-3 py-2 text-sm font-medium border rounded-r-md transition-colors ${
+              className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-r-md transition-colors ${
                 assetType === 'helmet'
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
               }`}
             >
-              Helmets
+              <span className="material-symbols-outlined text-lg">sports_motorsports</span>
+              <span>Helmets</span>
             </button>
           </div>
         </div>
@@ -213,19 +215,21 @@ export default function Reports() {
           <button
             onClick={handleClearReports}
             disabled={isClearing}
-            className={`px-4 py-2 rounded-md transition-colors ${
+            className={`flex items-center space-x-1 px-4 py-2 rounded-md transition-colors ${
               isClearing
                 ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
                 : 'bg-red-600 text-white hover:bg-red-700'
             }`}
           >
-            {isClearing ? 'Clearing...' : 'Clear Reports'}
+            <span className="material-symbols-outlined text-lg">delete_sweep</span>
+            <span>{isClearing ? 'Clearing...' : 'Clear Reports'}</span>
           </button>
           <button
             onClick={exportToCSV}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="flex items-center space-x-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
-            Export CSV
+            <span className="material-symbols-outlined text-lg">download</span>
+            <span>Export CSV</span>
           </button>
         </div>
       </div>

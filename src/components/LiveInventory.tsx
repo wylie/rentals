@@ -26,7 +26,7 @@ function AssetButton({ asset, onToggle, isLoading }: AssetButtonProps) {
       onClick={() => onToggle(asset.id, isInUse)}
       disabled={isLoading}
       className={`
-        p-4 rounded-lg font-medium text-sm transition-all duration-200 min-h-[80px] flex flex-col justify-center items-center space-y-2
+        p-3 rounded-lg font-medium text-sm transition-all duration-200 min-h-[80px] flex flex-col justify-center items-center space-y-1
         ${isInUse 
           ? 'bg-red-100 border-2 border-red-300 text-red-800 hover:bg-red-200' 
           : 'bg-green-100 border-2 border-green-300 text-green-800 hover:bg-green-200'
@@ -35,11 +35,19 @@ function AssetButton({ asset, onToggle, isLoading }: AssetButtonProps) {
         ${asset.type === 'bike' ? 'col-span-1' : 'col-span-1'}
       `}
     >
-      <div className="font-semibold">{asset.label}</div>
-      <div className={`text-xs px-2 py-1 rounded ${
+      <span className={`material-symbols-outlined text-2xl ${
+        asset.type === 'bike' ? '' : ''
+      }`}>
+        {asset.type === 'bike' ? 'pedal_bike' : 'sports_motorsports'}
+      </span>
+      <div className="font-semibold text-xs">{asset.label}</div>
+      <div className={`flex items-center space-x-1 text-xs px-2 py-0.5 rounded ${
         isInUse ? 'bg-red-200 text-red-700' : 'bg-green-200 text-green-700'
       }`}>
-        {isInUse ? 'In Use' : 'Available'}
+        <span className="material-symbols-outlined text-sm">
+          {isInUse ? 'lock' : 'check_circle'}
+        </span>
+        <span>{isInUse ? 'In Use' : 'Available'}</span>
       </div>
     </button>
   )

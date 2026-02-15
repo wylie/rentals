@@ -9,8 +9,11 @@ interface NavigationProps {
   onViewChange: (view: 'inventory' | 'reports') => void
 }
 
+type SettingsTab = 'session' | 'fleet' | 'pin' | 'company'
+
 export default function Navigation({ currentView, onViewChange }: NavigationProps) {
   const [showSettings, setShowSettings] = useState(false)
+  const [activeTab, setActiveTab] = useState<SettingsTab>('session')
   const [tempTimeout, setTempTimeout] = useState('')
   const [fleetCounts, setFleetCounts] = useState({ bikes: 0, helmets: 0 })
   const [tempBikeCount, setTempBikeCount] = useState('')
@@ -22,10 +25,12 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
   const [pinMessage, setPinMessage] = useState('')
   const [pinError, setPinError] = useState('')
   const [isUpdatingPin, setIsUpdatingPin] = useState(false)
-  const { sessionTimeoutHours, setSessionTimeout, changePin, logout } = useApp()
+  const [tempCompanyName, setTempCompanyName] = useState('')
+  const { sessionTimeoutHours, companyName, setSessionTimeout, setCompanyName, changePin, logout } = useApp()
 
   const handleOpenSettings = async () => {
     setTempTimeout(sessionTimeoutHours.toString())
+    setTempCompanyName(companyName)
     
     // Load current fleet counts
     try {
@@ -49,6 +54,9 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
       if (hours > 0 && hours <= 168) {
         setSessionTimeout(hours)
       }
+
+      // Update company name
+      setCompanyName(tempCompanyName)
       
       // Update fleet counts using force reset for accuracy
       const newBikeCount = parseInt(tempBikeCount, 10)
@@ -98,7 +106,7 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
         window.location.reload()
       }, 500)
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving settings:', error)
       alert(`Error updating settings: ${error.message}. Please try again.`)
       setIsUpdatingFleet(false) // Make sure to clear loading state
@@ -142,6 +150,7 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
       logout()
     }
   }
+
   return (
     <>
       <nav className="bg-white shadow-sm border-b">
@@ -150,6 +159,7 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
             {/* Logo */}
             <div className="flex items-center">
               <h1 className="text-xl font-bold text-gray-900">
+                {companyName && <span className="text-blue-600">{companyName} </span>}
                 Rentals Management
               </h1>
             </div>
@@ -158,23 +168,25 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
             <div className="flex space-x-4">
               <button
                 onClick={() => onViewChange('inventory')}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                className={`flex items-center space-x-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                   currentView === 'inventory'
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                Live Inventory
+                <span className="material-symbols-outlined text-lg">inventory_2</span>
+                <span>Live Inventory</span>
               </button>
               <button
                 onClick={() => onViewChange('reports')}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                className={`flex items-center space-x-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                   currentView === 'reports'
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                Reports
+                <span className="material-symbols-outlined text-lg">assessment</span>
+                <span>Reports</span>
               </button>
             </div>
 
@@ -182,17 +194,17 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
             <div className="flex items-center space-x-3">
               <button
                 onClick={handleOpenSettings}
-                className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                 title="Settings"
               >
-                ⚙️
+                <span className="material-symbols-outlined">settings</span>
               </button>
               <button
                 onClick={handleLogout}
-                className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                className="flex items-center px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
                 title="Logout"
               >
-                🚪
+                <span className="material-symbols-outlined">logout</span>
               </button>
             </div>
           </div>
@@ -202,58 +214,117 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
       {/* Settings Modal */}
       {showSettings && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Settings</h2>
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b">
+              <h2 className="text-lg font-bold text-gray-900">Settings</h2>
+            </div>
             
-            <div className="space-y-6">
-              {/* Session Timeout Section */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-800 mb-3">Session Settings</h3>
-                <div>
-                  <label htmlFor="sessionTimeout" className="block text-sm font-medium text-gray-700 mb-2">
-                    Session Timeout (hours)
-                  </label>
-                  <input
-                    id="sessionTimeout"
-                    type="number"
-                    min="0.1"
-                    max="168"
-                    step="0.5"
-                    value={tempTimeout}
-                    onChange={(e) => setTempTimeout(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="4"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    How long to stay logged in (0.1 to 168 hours)
-                  </p>
-                  <div className="mt-2 text-xs text-gray-600">
-                    <p><strong>Quick options:</strong></p>
-                    <div className="flex space-x-2 mt-1">
-                      <button onClick={() => setTempTimeout('1')} className="px-2 py-1 bg-gray-100 rounded text-xs hover:bg-gray-200">1hr</button>
-                      <button onClick={() => setTempTimeout('4')} className="px-2 py-1 bg-gray-100 rounded text-xs hover:bg-gray-200">4hrs</button>
-                      <button onClick={() => setTempTimeout('8')} className="px-2 py-1 bg-gray-100 rounded text-xs hover:bg-gray-200">8hrs</button>
-                      <button onClick={() => setTempTimeout('24')} className="px-2 py-1 bg-gray-100 rounded text-xs hover:bg-gray-200">1day</button>
+            {/* Tabs */}
+            <div className="border-b bg-gray-50">
+              <div className="flex">
+                <button
+                  onClick={() => setActiveTab('session')}
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors ${
+                    activeTab === 'session'
+                      ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-lg">timer</span>
+                  <span>Session</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('fleet')}
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors ${
+                    activeTab === 'fleet'
+                      ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-lg">garage</span>
+                  <span>Fleet</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('pin')}
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors ${
+                    activeTab === 'pin'
+                      ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-lg">lock</span>
+                  <span>Access PIN</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('company')}
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors ${
+                    activeTab === 'company'
+                      ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-lg">business</span>
+                  <span>Company</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Tab Content */}
+            <div className="p-6 overflow-y-auto flex-1">
+              {/* Session Timeout Tab */}
+              {activeTab === 'session' && (
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="sessionTimeout" className="block text-sm font-medium text-gray-700 mb-2">
+                      Session Timeout (hours)
+                    </label>
+                    <input
+                      id="sessionTimeout"
+                      type="number"
+                      min="0.1"
+                      max="168"
+                      step="0.5"
+                      value={tempTimeout}
+                      onChange={(e) => setTempTimeout(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="4"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      How long to stay logged in (0.1 to 168 hours)
+                    </p>
+                    <div className="mt-3">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Quick options:</p>
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => setTempTimeout('1')} className="px-3 py-1.5 bg-gray-100 rounded text-sm hover:bg-gray-200">1 hour</button>
+                        <button onClick={() => setTempTimeout('4')} className="px-3 py-1.5 bg-gray-100 rounded text-sm hover:bg-gray-200">4 hours</button>
+                        <button onClick={() => setTempTimeout('8')} className="px-3 py-1.5 bg-gray-100 rounded text-sm hover:bg-gray-200">8 hours</button>
+                        <button onClick={() => setTempTimeout('24')} className="px-3 py-1.5 bg-gray-100 rounded text-sm hover:bg-gray-200">1 day</button>
+                        <button onClick={() => setTempTimeout('168')} className="px-3 py-1.5 bg-gray-100 rounded text-sm hover:bg-gray-200">1 week</button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Fleet Management Section */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-800 mb-3">Fleet Management</h3>
-                <div className="space-y-3">
+              {/* Fleet Management Tab */}
+              {activeTab === 'fleet' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600 mb-4">
+                    Adjust the total number of bikes and helmets in your fleet. Changes will take effect after saving.
+                  </p>
+                  
                   <div>
-                    <label htmlFor="bikeCount" className="block text-sm font-medium text-gray-700 mb-1">
-                      🚴‍♂️ Number of Bikes
+                    <label htmlFor="bikeCount" className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
+                      <span className="material-symbols-outlined text-blue-600">pedal_bike</span>
+                      <span>Number of Bikes</span>
                     </label>
                     <div className="flex items-center space-x-3">
                       <button
                         onClick={() => setTempBikeCount(Math.max(0, parseInt(tempBikeCount) - 1).toString())}
-                        className="px-2 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 text-sm font-bold"
+                        className="flex items-center justify-center w-10 h-10 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
                         disabled={isUpdatingFleet}
                       >
-                        −
+                        <span className="material-symbols-outlined">remove</span>
                       </button>
                       <input
                         id="bikeCount"
@@ -262,33 +333,34 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                         max="999"
                         value={tempBikeCount}
                         onChange={(e) => setTempBikeCount(e.target.value)}
-                        className="w-20 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-24 px-3 py-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-semibold"
                         disabled={isUpdatingFleet}
                       />
                       <button
                         onClick={() => setTempBikeCount((parseInt(tempBikeCount) + 1).toString())}
-                        className="px-2 py-1 bg-green-100 text-green-600 rounded hover:bg-green-200 text-sm font-bold"
+                        className="flex items-center justify-center w-10 h-10 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
                         disabled={isUpdatingFleet}
                       >
-                        +
+                        <span className="material-symbols-outlined">add</span>
                       </button>
-                      <span className="text-xs text-gray-500">
-                        Currently: {fleetCounts.bikes}
+                      <span className="text-sm text-gray-500">
+                        Currently: <strong>{fleetCounts.bikes}</strong>
                       </span>
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="helmetCount" className="block text-sm font-medium text-gray-700 mb-1">
-                      ⛑️ Number of Helmets
+                    <label htmlFor="helmetCount" className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
+                      <span className="material-symbols-outlined text-orange-600">sports_motorsports</span>
+                      <span>Number of Helmets</span>
                     </label>
                     <div className="flex items-center space-x-3">
                       <button
                         onClick={() => setTempHelmetCount(Math.max(0, parseInt(tempHelmetCount) - 1).toString())}
-                        className="px-2 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 text-sm font-bold"
+                        className="flex items-center justify-center w-10 h-10 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
                         disabled={isUpdatingFleet}
                       >
-                        −
+                        <span className="material-symbols-outlined">remove</span>
                       </button>
                       <input
                         id="helmetCount"
@@ -297,46 +369,57 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                         max="999"
                         value={tempHelmetCount}
                         onChange={(e) => setTempHelmetCount(e.target.value)}
-                        className="w-20 px-2 py-1 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-24 px-3 py-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-semibold"
                         disabled={isUpdatingFleet}
                       />
                       <button
                         onClick={() => setTempHelmetCount((parseInt(tempHelmetCount) + 1).toString())}
-                        className="px-2 py-1 bg-green-100 text-green-600 rounded hover:bg-green-200 text-sm font-bold"
+                        className="flex items-center justify-center w-10 h-10 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
                         disabled={isUpdatingFleet}
                       >
-                        +
+                        <span className="material-symbols-outlined">add</span>
                       </button>
-                      <span className="text-xs text-gray-500">
-                        Currently: {fleetCounts.helmets}
+                      <span className="text-sm text-gray-500">
+                        Currently: <strong>{fleetCounts.helmets}</strong>
                       </span>
                     </div>
                   </div>
 
                   {(tempBikeCount !== fleetCounts.bikes.toString() || tempHelmetCount !== fleetCounts.helmets.toString()) && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-xs text-yellow-700">
-                      <p><strong>Changes will be applied when you save:</strong></p>
-                      {tempBikeCount !== fleetCounts.bikes.toString() && (
-                        <p>• Bikes: {fleetCounts.bikes} → {tempBikeCount} 
-                          ({parseInt(tempBikeCount) - fleetCounts.bikes > 0 ? '+' : ''}{parseInt(tempBikeCount) - fleetCounts.bikes})
-                        </p>
-                      )}
-                      {tempHelmetCount !== fleetCounts.helmets.toString() && (
-                        <p>• Helmets: {fleetCounts.helmets} → {tempHelmetCount} 
-                          ({parseInt(tempHelmetCount) - fleetCounts.helmets > 0 ? '+' : ''}{parseInt(tempHelmetCount) - fleetCounts.helmets})
-                        </p>
-                      )}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+                      <p className="text-sm font-semibold text-blue-900 mb-1">Changes to be applied:</p>
+                      <ul className="text-sm text-blue-700 space-y-1">
+                        {tempBikeCount !== fleetCounts.bikes.toString() && (
+                          <li>
+                            • Bikes: {fleetCounts.bikes} → {tempBikeCount} 
+                            <span className={parseInt(tempBikeCount) - fleetCounts.bikes > 0 ? 'text-green-600' : 'text-red-600'}>
+                              {' '}({parseInt(tempBikeCount) - fleetCounts.bikes > 0 ? '+' : ''}{parseInt(tempBikeCount) - fleetCounts.bikes})
+                            </span>
+                          </li>
+                        )}
+                        {tempHelmetCount !== fleetCounts.helmets.toString() && (
+                          <li>
+                            • Helmets: {fleetCounts.helmets} → {tempHelmetCount} 
+                            <span className={parseInt(tempHelmetCount) - fleetCounts.helmets > 0 ? 'text-green-600' : 'text-red-600'}>
+                              {' '}({parseInt(tempHelmetCount) - fleetCounts.helmets > 0 ? '+' : ''}{parseInt(tempHelmetCount) - fleetCounts.helmets})
+                            </span>
+                          </li>
+                        )}
+                      </ul>
                     </div>
                   )}
                 </div>
-              </div>
+              )}
 
-              {/* PIN Management Section */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-800 mb-3">Access PIN</h3>
-                <div className="space-y-3">
+              {/* PIN Management Tab */}
+              {activeTab === 'pin' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600 mb-4">
+                    Change the PIN used to access this application. The PIN must be at least 4 digits.
+                  </p>
+                  
                   <div>
-                    <label htmlFor="currentPin" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="currentPin" className="block text-sm font-medium text-gray-700 mb-2">
                       Current PIN
                     </label>
                     <input
@@ -352,7 +435,7 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                     />
                   </div>
                   <div>
-                    <label htmlFor="newPin" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="newPin" className="block text-sm font-medium text-gray-700 mb-2">
                       New PIN
                     </label>
                     <input
@@ -363,12 +446,12 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                       value={newPin}
                       onChange={(e) => setNewPin(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter new PIN"
+                      placeholder="Enter new PIN (min 4 digits)"
                       disabled={isUpdatingPin}
                     />
                   </div>
                   <div>
-                    <label htmlFor="confirmPin" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="confirmPin" className="block text-sm font-medium text-gray-700 mb-2">
                       Confirm New PIN
                     </label>
                     <input
@@ -385,54 +468,97 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                   </div>
 
                   {pinError && (
-                    <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                      {pinError}
+                    <div className="flex items-center space-x-2 text-sm text-red-600 bg-red-50 p-3 rounded-lg">
+                      <span className="material-symbols-outlined">error</span>
+                      <span>{pinError}</span>
                     </div>
                   )}
 
                   {pinMessage && (
-                    <div className="text-sm text-green-700 bg-green-50 p-2 rounded">
-                      {pinMessage}
+                    <div className="flex items-center space-x-2 text-sm text-green-700 bg-green-50 p-3 rounded-lg">
+                      <span className="material-symbols-outlined">check_circle</span>
+                      <span>{pinMessage}</span>
                     </div>
                   )}
 
                   <button
                     onClick={handleChangePin}
                     disabled={isUpdatingPin}
-                    className={`w-full py-2 px-4 rounded-md transition-colors ${
+                    className={`w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
                       isUpdatingPin
                         ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
                         : 'bg-blue-600 text-white hover:bg-blue-700'
                     }`}
                   >
-                    {isUpdatingPin ? 'Updating PIN...' : 'Update PIN'}
+                    <span className="material-symbols-outlined">lock_reset</span>
+                    <span>{isUpdatingPin ? 'Updating PIN...' : 'Update PIN'}</span>
                   </button>
                 </div>
-              </div>
+              )}
+
+              {/* Company Settings Tab */}
+              {activeTab === 'company' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600 mb-4">
+                    Customize how your company name appears in the application header.
+                  </p>
+                  
+                  <div>
+                    <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
+                      Company Name
+                    </label>
+                    <input
+                      id="companyName"
+                      type="text"
+                      value={tempCompanyName}
+                      onChange={(e) => setTempCompanyName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., Acme Rentals"
+                      maxLength={50}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Leave blank to hide the company name
+                    </p>
+                  </div>
+
+                  {tempCompanyName && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4">
+                      <p className="text-xs text-gray-600 mb-2">Preview:</p>
+                      <p className="text-lg font-bold">
+                        <span className="text-blue-600">{tempCompanyName} </span>
+                        <span className="text-gray-900">Rentals Management</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            <div className="flex space-x-3 mt-6">
+            {/* Footer Buttons */}
+            <div className="flex space-x-3 p-6 border-t bg-gray-50">
               <button
                 onClick={handleSaveSettings}
                 disabled={isUpdatingFleet}
-                className={`flex-1 py-2 px-4 rounded-md transition-colors ${
+                className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
                   isUpdatingFleet 
                     ? 'bg-gray-400 text-white cursor-not-allowed' 
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
-                {isUpdatingFleet ? 'Updating Fleet...' : 'Save'}
+                <span className="material-symbols-outlined">save</span>
+                <span>{isUpdatingFleet ? 'Saving...' : 'Save Changes'}</span>
               </button>
               <button
                 onClick={() => setShowSettings(false)}
                 disabled={isUpdatingFleet}
-                className={`flex-1 py-2 px-4 rounded-md transition-colors ${
+                className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
                   isUpdatingFleet
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
                 }`}
               >
-                Cancel
+                <span className="material-symbols-outlined">close</span>
+                <span>Cancel</span>
               </button>
             </div>
           </div>
