@@ -5,23 +5,18 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { User } from '@supabase/supabase-js'
 import { initializeUserData, signOut as dbSignOut } from '@/lib/database'
 
-type Station = 'frontdesk' | 'bikepark'
-
 interface AppContextType {
   isAuthenticated: boolean
-  currentStation: Station
   sessionTimeoutHours: number
   user: User | null
   loading: boolean
-  setStation: (station: Station) => void
   setSessionTimeout: (hours: number) => void
   signIn: (email: string, password: string) => Promise<{ error?: any }>
   signUp: (email: string, password: string) => Promise<{ error?: any }>
   logout: () => Promise<void>
 }
 
-// Station and session timeout storage
-const STATION_STORAGE_KEY = 'currentStation'
+// Session timeout storage
 const SESSION_TIMEOUT_KEY = 'rental_session_timeout'
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -29,21 +24,14 @@ const AppContext = createContext<AppContextType | undefined>(undefined)
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [currentStation, setCurrentStation] = useState<Station>('frontdesk')
   const [sessionTimeoutHours, setSessionTimeoutHours] = useState(4) // Default 4 hours
 
   const isAuthenticated = !!user
 
   // Load preferences and initialize auth on mount
   useEffect(() => {
-    // Load station preference
+    // Load session timeout setting
     if (typeof window !== 'undefined') {
-      const savedStation = localStorage.getItem(STATION_STORAGE_KEY) as Station
-      if (savedStation && (savedStation === 'frontdesk' || savedStation === 'bikepark')) {
-        setCurrentStation(savedStation)
-      }
-
-      // Load session timeout setting
       const savedTimeout = localStorage.getItem(SESSION_TIMEOUT_KEY)
       if (savedTimeout) {
         const timeoutHours = parseFloat(savedTimeout)
@@ -113,11 +101,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const setStation = (station: Station) => {
-    setCurrentStation(station)
-    localStorage.setItem(STATION_STORAGE_KEY, station)
-  }
-
   const setSessionTimeout = (hours: number) => {
     if (hours > 0 && hours <= 168) { // Between 1 minute and 1 week
       setSessionTimeoutHours(hours)
@@ -159,11 +142,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={{
       isAuthenticated,
-      currentStation,
       sessionTimeoutHours,
       user,
       loading,
-      setStation,
       setSessionTimeout,
       signIn,
       signUp,

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useApp } from '@/contexts/AppContext'
 import { 
   initializeUserData, 
   getAssetsWithState, 
@@ -11,10 +10,6 @@ import {
   getAssetStates,
   subscribeToAssetStateChanges,
   cleanupDuplicateAssets,
-  getFleetCounts,
-  addAssetsToFleet,
-  removeAssetsFromFleet,
-  forceFleetReset,
   type AssetsWithState 
 } from '@/lib/database'
 
@@ -56,7 +51,6 @@ export default function LiveInventory() {
   const [loading, setLoading] = useState(true)
   const [toggleLoading, setToggleLoading] = useState<number | null>(null)
   const [loadStartTime] = useState(Date.now())
-  const { currentStation } = useApp()
 
   // Set global load start time for timeout detection
   useEffect(() => {
@@ -109,7 +103,7 @@ export default function LiveInventory() {
           // Update session with return information
           await updateSession(currentState.current_session_id, {
             returned_at: new Date().toISOString(),
-            returned_station: currentStation
+            returned_station: 'Main Location'
           })
         }
 
@@ -125,7 +119,7 @@ export default function LiveInventory() {
         const newSession = await createSession({
           asset_id: assetId,
           checked_out_at: new Date().toISOString(),
-          checked_out_station: currentStation,
+          checked_out_station: 'Main Location',
           checked_out_by: null
         })
 

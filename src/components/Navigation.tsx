@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useApp } from '@/contexts/AppContext'
-import StationSelector from './StationSelector'
 import { getFleetCounts, addAssetsToFleet, removeAssetsFromFleet, forceFleetReset } from '@/lib/database'
 
 interface NavigationProps {
@@ -143,7 +142,6 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
 
             {/* Right side controls */}
             <div className="flex items-center space-x-3">
-              <StationSelector />
               <button
                 onClick={handleOpenSettings}
                 className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
