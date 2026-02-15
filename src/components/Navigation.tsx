@@ -163,22 +163,13 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                 Rental Management
               </h1>
               
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={handleOpenSettings}
-                  className="flex items-center px-2 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                  title="Settings"
-                >
-                  <span className="material-symbols-outlined">settings</span>
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center px-2 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                  title="Logout"
-                >
-                  <span className="material-symbols-outlined">logout</span>
-                </button>
-              </div>
+              <button
+                onClick={handleOpenSettings}
+                className="flex items-center px-2 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                title="Settings"
+              >
+                <span className="material-symbols-outlined">settings</span>
+              </button>
             </div>
 
             {/* Second Row: Navigation Links */}
@@ -219,11 +210,11 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
             </div>
             
             {/* Tabs */}
-            <div className="border-b bg-gray-50">
-              <div className="flex">
+            <div className="border-b bg-gray-50 overflow-x-auto">
+              <div className="flex min-w-max">
                 <button
                   onClick={() => setActiveTab('session')}
-                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors ${
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === 'session'
                       ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -234,7 +225,7 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                 </button>
                 <button
                   onClick={() => setActiveTab('fleet')}
-                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors ${
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === 'fleet'
                       ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -245,7 +236,7 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                 </button>
                 <button
                   onClick={() => setActiveTab('pin')}
-                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors ${
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === 'pin'
                       ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -256,7 +247,7 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                 </button>
                 <button
                   onClick={() => setActiveTab('company')}
-                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors ${
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === 'company'
                       ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -534,30 +525,39 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
             </div>
 
             {/* Footer Buttons */}
-            <div className="flex space-x-3 p-6 border-t bg-gray-50">
+            <div className="flex flex-col space-y-2 p-6 border-t bg-gray-50">
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleSaveSettings}
+                  disabled={isUpdatingFleet}
+                  className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
+                    isUpdatingFleet 
+                      ? 'bg-gray-400 text-white cursor-not-allowed' 
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  <span className="material-symbols-outlined">save</span>
+                  <span>{isUpdatingFleet ? 'Saving...' : 'Save Changes'}</span>
+                </button>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  disabled={isUpdatingFleet}
+                  className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
+                    isUpdatingFleet
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                  }`}
+                >
+                  <span className="material-symbols-outlined">close</span>
+                  <span>Cancel</span>
+                </button>
+              </div>
               <button
-                onClick={handleSaveSettings}
-                disabled={isUpdatingFleet}
-                className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
-                  isUpdatingFleet 
-                    ? 'bg-gray-400 text-white cursor-not-allowed' 
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors"
               >
-                <span className="material-symbols-outlined">save</span>
-                <span>{isUpdatingFleet ? 'Saving...' : 'Save Changes'}</span>
-              </button>
-              <button
-                onClick={() => setShowSettings(false)}
-                disabled={isUpdatingFleet}
-                className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
-                  isUpdatingFleet
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                }`}
-              >
-                <span className="material-symbols-outlined">close</span>
-                <span>Cancel</span>
+                <span className="material-symbols-outlined">logout</span>
+                <span>Logout</span>
               </button>
             </div>
           </div>
