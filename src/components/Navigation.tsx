@@ -9,7 +9,7 @@ interface NavigationProps {
   onViewChange: (view: 'inventory' | 'reports') => void
 }
 
-type SettingsTab = 'session' | 'fleet' | 'pin' | 'company'
+type SettingsTab = 'session' | 'fleet' | 'pin' | 'company' | 'logout'
 
 export default function Navigation({ currentView, onViewChange }: NavigationProps) {
   const [showSettings, setShowSettings] = useState(false)
@@ -256,6 +256,17 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                   <span className="material-symbols-outlined text-lg">business</span>
                   <span>Company</span>
                 </button>
+                <button
+                  onClick={() => setActiveTab('logout')}
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                    activeTab === 'logout'
+                      ? 'border-b-2 border-red-600 text-red-600 bg-white'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-lg">logout</span>
+                  <span>Logout</span>
+                </button>
               </div>
             </div>
 
@@ -285,11 +296,11 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                     <div className="mt-3">
                       <p className="text-sm font-medium text-gray-700 mb-2">Quick options:</p>
                       <div className="flex flex-wrap gap-2">
-                        <button onClick={() => setTempTimeout('1')} className="px-3 py-1.5 bg-gray-100 rounded text-sm hover:bg-gray-200">1 hour</button>
-                        <button onClick={() => setTempTimeout('4')} className="px-3 py-1.5 bg-gray-100 rounded text-sm hover:bg-gray-200">4 hours</button>
-                        <button onClick={() => setTempTimeout('8')} className="px-3 py-1.5 bg-gray-100 rounded text-sm hover:bg-gray-200">8 hours</button>
-                        <button onClick={() => setTempTimeout('24')} className="px-3 py-1.5 bg-gray-100 rounded text-sm hover:bg-gray-200">1 day</button>
-                        <button onClick={() => setTempTimeout('168')} className="px-3 py-1.5 bg-gray-100 rounded text-sm hover:bg-gray-200">1 week</button>
+                        <button onClick={() => setTempTimeout('1')} className="px-3 py-1.5 bg-gray-100 rounded text-sm text-gray-700 hover:bg-gray-200">1 hour</button>
+                        <button onClick={() => setTempTimeout('4')} className="px-3 py-1.5 bg-gray-100 rounded text-sm text-gray-700 hover:bg-gray-200">4 hours</button>
+                        <button onClick={() => setTempTimeout('8')} className="px-3 py-1.5 bg-gray-100 rounded text-sm text-gray-700 hover:bg-gray-200">8 hours</button>
+                        <button onClick={() => setTempTimeout('24')} className="px-3 py-1.5 bg-gray-100 rounded text-sm text-gray-700 hover:bg-gray-200">1 day</button>
+                        <button onClick={() => setTempTimeout('168')} className="px-3 py-1.5 bg-gray-100 rounded text-sm text-gray-700 hover:bg-gray-200">1 week</button>
                       </div>
                     </div>
                   </div>
@@ -522,42 +533,55 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
                   )}
                 </div>
               )}
+
+              {/* Logout Tab */}
+              {activeTab === 'logout' && (
+                <div className="space-y-4">
+                  <div className="text-center py-8">
+                    <div className="flex justify-center mb-4">
+                      <span className="material-symbols-outlined text-red-600" style={{ fontSize: '48px' }}>logout</span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Logout</h3>
+                    <p className="text-sm text-gray-600 mb-6">
+                      Are you sure you want to logout? You&apos;ll need to enter your PIN to access the system again.
+                    </p>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors font-medium"
+                    >
+                      <span className="material-symbols-outlined">logout</span>
+                      <span>Logout Now</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Footer Buttons */}
-            <div className="flex flex-col space-y-2 p-6 border-t bg-gray-50">
-              <div className="flex space-x-3">
-                <button
-                  onClick={handleSaveSettings}
-                  disabled={isUpdatingFleet}
-                  className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
-                    isUpdatingFleet 
-                      ? 'bg-gray-400 text-white cursor-not-allowed' 
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-                >
-                  <span className="material-symbols-outlined">save</span>
-                  <span>{isUpdatingFleet ? 'Saving...' : 'Save Changes'}</span>
-                </button>
-                <button
-                  onClick={() => setShowSettings(false)}
-                  disabled={isUpdatingFleet}
-                  className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
-                    isUpdatingFleet
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                  }`}
-                >
-                  <span className="material-symbols-outlined">close</span>
-                  <span>Cancel</span>
-                </button>
-              </div>
+            <div className="flex space-x-3 p-6 border-t bg-gray-50">
               <button
-                onClick={handleLogout}
-                className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors"
+                onClick={handleSaveSettings}
+                disabled={isUpdatingFleet}
+                className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
+                  isUpdatingFleet 
+                    ? 'bg-gray-400 text-white cursor-not-allowed' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
               >
-                <span className="material-symbols-outlined">logout</span>
-                <span>Logout</span>
+                <span className="material-symbols-outlined">save</span>
+                <span>{isUpdatingFleet ? 'Saving...' : 'Save Changes'}</span>
+              </button>
+              <button
+                onClick={() => setShowSettings(false)}
+                disabled={isUpdatingFleet}
+                className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
+                  isUpdatingFleet
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                }`}
+              >
+                <span className="material-symbols-outlined">close</span>
+                <span>Cancel</span>
               </button>
             </div>
           </div>
