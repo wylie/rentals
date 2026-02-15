@@ -51,19 +51,52 @@ export default function Navigation({ currentView, onViewChange }: NavigationProp
       
       if (newBikeCount !== fleetCounts.bikes || newHelmetCount !== fleetCounts.helmets) {
         console.log('🔄 Resetting fleet to exact counts...')
-        await forceFleetReset(newBikeCount, newHelmetCount)
+        
+        // Add timeout to prevent hanging
+        const resetPromise = forceFleetReset(newBikeCount, newHelmetCount)
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Fleet reset timeout')), 20000)
+        )
+        
+        try {
+          await Promise.race([resetPromise, timeoutPromise])
+          console.log('✅ Fleet reset completed successfully')
+        } catch (resetError) {
+          console.error('❌ Fleet reset failed:', resetError)
+          
+          // Try individual operations as fallback
+          console.log('🔄 Trying fallback approach...')
+          
+          const bikeDiff = newBikeCount - fleetCounts.bikes
+          const helmetDiff = newHelmetCount - fleetCounts.helmets
+          
+          if (bikeDiff > 0) {
+            await addAssetsToFleet('bike', bikeDiff)
+          } else if (bikeDiff < 0) {
+            await removeAssetsFromFleet('bike', Math.abs(bikeDiff))
+          }
+          
+          if (helmetDiff > 0) {
+            await addAssetsToFleet('helmet', helmetDiff)
+          } else if (helmetDiff < 0) {
+            await removeAssetsFromFleet('helmet', Math.abs(helmetDiff))
+          }
+          
+          console.log('✅ Fallback fleet update completed')
+        }
       }
       
       setShowSettings(false)
       
-      // Reload the page to refresh inventory
-      window.location.reload()
+      // Small delay before reload to ensure database operations complete
+      setTimeout(() => {
+        window.location.reload()
+      }, 500)
       
     } catch (error) {
       console.error('Error saving settings:', error)
-      alert('Error updating settings. Please try again.')
-    } finally {
-      setIsUpdatingFleet(false)
+      alert(`Error updating settings: ${error.message}. Please try again.`)
+      setIsUpdatingFleet(false) // Make sure to clear loading state
     }
   }
 

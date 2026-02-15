@@ -171,14 +171,20 @@ export const forceFleetReset = async (bikeCount: number, helmetCount: number): P
     
     console.log(`🔄 Force resetting fleet to ${bikeCount} bikes and ${helmetCount} helmets...`)
     
-    // Get current active asset counts
-    const { data: currentAssets, error: fetchError } = await supabase
-      .from('assets')
-      .select('id, type, label')
-      .eq('user_id', userId)
-      .eq('active', true)
+    // Get current active asset counts with timeout
+    const { data: currentAssets, error: fetchError } = await Promise.race([
+      supabase
+        .from('assets')
+        .select('id, type, label')
+        .eq('user_id', userId)
+        .eq('active', true),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Database fetch timeout')), 5000))
+    ]) as any
     
-    if (fetchError) throw fetchError
+    if (fetchError) {
+      console.error('Error fetching current assets:', fetchError)
+      throw fetchError
+    }
     
     const currentBikes = currentAssets?.filter(a => a.type === 'bike') || []
     const currentHelmets = currentAssets?.filter(a => a.type === 'helmet') || []
@@ -186,34 +192,51 @@ export const forceFleetReset = async (bikeCount: number, helmetCount: number): P
     console.log(`📊 Current: ${currentBikes.length} bikes, ${currentHelmets.length} helmets`)
     console.log(`🎯 Target: ${bikeCount} bikes, ${helmetCount} helmets`)
     
-    // Handle bikes
+    // Handle bikes with individual timeouts
     if (currentBikes.length > bikeCount) {
-      // Remove excess bikes
       const excess = currentBikes.length - bikeCount
       console.log(`🗑️  Need to remove ${excess} bikes`)
-      await removeAssetsFromFleet('bike', excess)
+      await Promise.race([
+        removeAssetsFromFleet('bike', excess),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Remove bikes timeout')), 10000))
+      ])
     } else if (currentBikes.length < bikeCount) {
-      // Add missing bikes
       const missing = bikeCount - currentBikes.length
       console.log(`➕ Need to add ${missing} bikes`)
-      await addAssetsToFleet('bike', missing)
+      await Promise.race([
+        addAssetsToFleet('bike', missing),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Add bikes timeout')), 10000))
+      ])
     }
     
-    // Handle helmets
+    // Handle helmets with individual timeouts
     if (currentHelmets.length > helmetCount) {
-      // Remove excess helmets
       const excess = currentHelmets.length - helmetCount
       console.log(`🗑️  Need to remove ${excess} helmets`)
-      await removeAssetsFromFleet('helmet', excess)
+      await Promise.race([
+        removeAssetsFromFleet('helmet', excess),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Remove helmets timeout')), 10000))
+      ])
     } else if (currentHelmets.length < helmetCount) {
-      // Add missing helmets
       const missing = helmetCount - currentHelmets.length
       console.log(`➕ Need to add ${missing} helmets`)
-      await addAssetsToFleet('helmet', missing)
+      await Promise.race([
+        addAssetsToFleet('helmet', missing),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Add helmets timeout')), 10000))
+      ])
     }
     
-    // Clean up any duplicates that might exist
-    await cleanupDuplicateAssets()
+    // Clean up any duplicates with timeout
+    try {
+      await Promise.race([
+        cleanupDuplicateAssets(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Cleanup timeout')), 8000))
+      ])
+      console.log('✅ Cleanup completed')
+    } catch (cleanupError) {
+      console.warn('⚠️ Cleanup failed, but continuing:', cleanupError)
+      // Don't throw here - cleanup failure shouldn't stop the reset
+    }
     
     console.log('✅ Fleet reset complete!')
     

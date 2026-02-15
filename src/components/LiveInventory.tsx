@@ -55,7 +55,13 @@ export default function LiveInventory() {
   const [assets, setAssets] = useState<AssetsWithState[]>([])
   const [loading, setLoading] = useState(true)
   const [toggleLoading, setToggleLoading] = useState<number | null>(null)
+  const [loadStartTime] = useState(Date.now())
   const { currentStation } = useApp()
+
+  // Set global load start time for timeout detection
+  useEffect(() => {
+    ;(window as any).loadStartTime = loadStartTime
+  }, [loadStartTime])
 
   // Load assets with their current state
   const loadAssets = async () => {
@@ -202,9 +208,31 @@ export default function LiveInventory() {
   }, [])
 
   if (loading) {
+    const timeElapsed = Date.now() - loadStartTime
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <div className="text-lg">Loading inventory...</div>
+        <div className="text-sm text-gray-500">
+          {timeElapsed > 10000 ? (
+            <div className="text-center space-y-3">
+              <p className="text-amber-600">Taking longer than expected...</p>
+              <button
+                onClick={() => {
+                  console.log('🔄 Force refresh requested')
+                  window.location.reload()
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Force Refresh
+              </button>
+              <p className="text-xs text-gray-400">
+                If this keeps happening, check your browser console (F12) for errors
+              </p>
+            </div>
+          ) : (
+            <p>Please wait while we load your assets...</p>
+          )}
+        </div>
       </div>
     )
   }
