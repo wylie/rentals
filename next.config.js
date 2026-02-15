@@ -1,11 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Temporarily disable basePath for development to fix email confirmation links
-  // Uncomment these lines for production deployment to GitHub Pages:
-  // output: 'export',
-  // basePath: '/rentals',
-  // assetPrefix: '/rentals',
-  // trailingSlash: true,
+  // Enable static export for GitHub Pages deployment
+  output: 'export',
+  basePath: process.env.NODE_ENV === 'production' ? '/rentals' : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/rentals' : '',
+  trailingSlash: true,
   images: {
     unoptimized: true
   },
