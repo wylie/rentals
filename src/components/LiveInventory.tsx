@@ -10,6 +10,7 @@ import {
   updateSession, 
   getAssetStates,
   subscribeToAssetStateChanges,
+  cleanupDuplicateAssets,
   type AssetsWithState 
 } from '@/lib/database'
 
@@ -56,6 +57,26 @@ export default function LiveInventory() {
   const loadAssets = async () => {
     try {
       const assetsData = await getAssetsWithState()
+      
+      // Debug: Check for duplicates
+      const grouped = assetsData.reduce((acc, asset) => {
+        const key = `${asset.type}-${asset.label}`
+        if (!acc[key]) acc[key] = []
+        acc[key].push(asset)
+        return acc
+      }, {} as Record<string, typeof assetsData>)
+      
+      const duplicates = Object.entries(grouped)
+        .filter(([key, assets]) => assets.length > 1)
+      
+      if (duplicates.length > 0) {
+        console.log('🚨 DUPLICATE ASSETS FOUND:', duplicates)
+        duplicates.forEach(([key, dupeAssets]) => {
+          console.log(`${key}: ${dupeAssets.length} copies`, dupeAssets.map(a => `ID:${a.id}`))
+        })
+      }
+      
+      console.log(`📊 Total assets loaded: ${assetsData.length}`)
       setAssets(assetsData)
     } catch (error) {
       console.error('Error loading assets:', error)
@@ -121,6 +142,7 @@ export default function LiveInventory() {
     const initializeAndLoad = async () => {
       try {
         await initializeUserData()
+        await cleanupDuplicateAssets() // Clean up any duplicates
         await loadAssets()
       } catch (error) {
         console.error('Error initializing data:', error)

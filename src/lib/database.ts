@@ -54,21 +54,95 @@ const getCurrentUserId = async (): Promise<string> => {
   return user.id
 }
 
+// Clean up duplicate assets for current user
+export const cleanupDuplicateAssets = async (): Promise<void> => {
+  try {
+    const userId = await getCurrentUserId()
+    
+    // Get all assets for user
+    const { data: allAssets, error: fetchError } = await supabase
+      .from('assets')
+      .select('*')
+      .eq('user_id', userId)
+      .order('id')
+    
+    if (fetchError) throw fetchError
+    if (!allAssets || allAssets.length === 0) return
+    
+    // Group by type and label to find duplicates
+    const grouped = allAssets.reduce((acc, asset) => {
+      const key = `${asset.type}-${asset.label}`
+      if (!acc[key]) acc[key] = []
+      acc[key].push(asset)
+      return acc
+    }, {} as Record<string, typeof allAssets>)
+    
+    // Find duplicates and keep only the first (oldest) one
+    const assetsToDelete: number[] = []
+    
+    Object.entries(grouped).forEach(([key, assets]) => {
+      if (assets.length > 1) {
+        console.log(`🗑️  Found ${assets.length} duplicates for ${key}, keeping ID:${assets[0].id}`)
+        // Keep the first one, mark the rest for deletion
+        assetsToDelete.push(...assets.slice(1).map(a => a.id))
+      }
+    })
+    
+    if (assetsToDelete.length > 0) {
+      console.log(`🗑️  Deleting ${assetsToDelete.length} duplicate assets...`)
+      
+      // Delete asset states first (foreign key constraint)
+      const { error: statesDeleteError } = await supabase
+        .from('asset_states')
+        .delete()
+        .in('asset_id', assetsToDelete)
+      
+      if (statesDeleteError) throw statesDeleteError
+      
+      // Delete the duplicate assets
+      const { error: assetsDeleteError } = await supabase
+        .from('assets')
+        .delete()
+        .in('id', assetsToDelete)
+      
+      if (assetsDeleteError) throw assetsDeleteError
+      
+      console.log(`✅ Cleaned up ${assetsToDelete.length} duplicate assets`)
+    } else {
+      console.log('✅ No duplicate assets found')
+    }
+    
+  } catch (error) {
+    console.error('Error cleaning up duplicates:', error)
+    throw error
+  }
+}
+
 // Initialize data for new user
 export const initializeUserData = async (): Promise<void> => {
   try {
     const userId = await getCurrentUserId()
     
     // Check if user already has data
-    const { data: existingAssets } = await supabase
+    const { data: existingAssets, error: checkError } = await supabase
       .from('assets')
       .select('id')
       .eq('user_id', userId)
       .limit(1)
     
+    if (checkError) {
+      console.error('Error checking existing assets:', checkError)
+      throw checkError
+    }
+    
+    console.log(`🔍 Checking existing assets for user ${userId}:`, existingAssets?.length || 0)
+    
     if (existingAssets && existingAssets.length > 0) {
+      console.log('✅ User already has data, skipping initialization')
       return // User already has data
     }
+    
+    console.log('🚀 Initializing data for new user...')
     
     // Create bikes (01-40)
     const bikes = Array.from({ length: 40 }, (_, i) => ({
@@ -88,13 +162,20 @@ export const initializeUserData = async (): Promise<void> => {
     
     const allAssets = [...bikes, ...helmets]
     
+    console.log(`📦 Creating ${allAssets.length} assets...`)
+    
     // Insert assets
     const { data: insertedAssets, error: assetsError } = await supabase
       .from('assets')
       .insert(allAssets)
       .select()
     
-    if (assetsError) throw assetsError
+    if (assetsError) {
+      console.error('Error inserting assets:', assetsError)
+      throw assetsError
+    }
+    
+    console.log(`✅ Created ${insertedAssets.length} assets`)
     
     // Create initial asset states
     const assetStates = insertedAssets.map(asset => ({
@@ -108,8 +189,13 @@ export const initializeUserData = async (): Promise<void> => {
       .from('asset_states')
       .insert(assetStates)
     
-    if (statesError) throw statesError
+    if (statesError) {
+      console.error('Error inserting asset states:', statesError)
+      throw statesError
+    }
     
+    console.log(`✅ Created ${assetStates.length} asset states`)
+
   } catch (error) {
     console.error('Error initializing user data:', error)
     throw error
