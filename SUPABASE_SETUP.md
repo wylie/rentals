@@ -33,16 +33,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_actual_supabase_anon_key_here
 NEXT_PUBLIC_APP_LOGIN_EMAIL=shared-login@example.com
 ```
 
-## 5. Enable Realtime (Required for Multi-Device Sync)
-
-For inventory changes to appear instantly on other devices without refreshing:
-
-1. In Supabase dashboard, go to **Database** → **Replication**
-2. Find the `asset_states` table in the list
-3. Toggle **Enable Realtime** ON for this table
-4. Optional: Also enable it for `assets` and `sessions` tables for complete sync
-
-## 6. Start the Development Server
+## 5. Start the Development Server
 
 ```bash
 npm run dev
@@ -62,10 +53,9 @@ npm run dev
 
 ### Key Features
 - ✅ **Cross-device sync**: Access your data from any iPad/device
-- ✅ **Real-time updates**: Changes appear immediately on all connected devices
-- ✅ **Secure authentication**: Each user has their own isolated data
+- ✅ **Automatic updates**: Changes appear on all devices within 3 seconds
 - ✅ **Cloud backup**: Your data is safely stored in the cloud
-- ✅ **Account management**: Sign up/sign in from any device
+- ✅ **Shared PIN authentication**: Simple login from any device
 
 ## First Time Setup
 
@@ -82,12 +72,8 @@ Make sure your `.env.local` file has the correct Supabase URL and API key. The f
 ### Database Setup
 If you see authentication errors, make sure you've run the SQL schema in your Supabase project.
 
-### Real-time Updates Not Working
-If changes don't appear instantly on other devices:
-1. Go to Supabase Dashboard → **Database** → **Replication**
-2. Make sure **Realtime** is enabled for the `asset_states` table
-3. Check that both devices are logged in and connected to the internet
-4. Look in the browser console (F12) for any subscription errors
+### Multi-Device Sync
+Changes on one device will appear on other devices within 3 seconds automatically. Make sure both devices are logged in with the same PIN.
 
 ## Security
 

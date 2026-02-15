@@ -8,7 +8,6 @@ import {
   createSession, 
   updateSession, 
   getAssetStates,
-  subscribeToAssetStateChanges,
   cleanupDuplicateAssets,
   type AssetsWithState 
 } from '@/lib/database'
@@ -141,7 +140,7 @@ export default function LiveInventory() {
     }
   }
 
-  // Set up real-time subscription and initialize data
+  // Initialize data and set up polling for multi-device sync
   useEffect(() => {
     const initializeAndLoad = async () => {
       try {
@@ -193,12 +192,16 @@ export default function LiveInventory() {
 
     safeInitialize()
 
-    // Subscribe to asset state changes for real-time updates
-    const unsubscribe = subscribeToAssetStateChanges(() => {
+    // Poll for updates every 3 seconds for multi-device sync
+    console.log('🔄 Starting polling for multi-device sync (every 3 seconds)')
+    const pollInterval = setInterval(() => {
       loadAssets()
-    })
+    }, 3000)
     
-    return unsubscribe
+    return () => {
+      console.log('🛑 Stopping polling')
+      clearInterval(pollInterval)
+    }
   }, [])
 
   if (loading) {
