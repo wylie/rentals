@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getAssets, getSessions, type Asset, type Session } from '@/lib/database'
+import { clearSessions, getAssets, getSessions, type Asset, type Session } from '@/lib/database'
 
 interface ReportData {
   asset: Asset
@@ -15,6 +15,7 @@ export default function Reports() {
   const [reportData, setReportData] = useState<ReportData[]>([])
   const [loading, setLoading] = useState(true)
   const [assetType, setAssetType] = useState<'bike' | 'helmet'>('bike')
+  const [isClearing, setIsClearing] = useState(false)
 
   const loadReportData = async () => {
     try {
@@ -116,6 +117,23 @@ export default function Reports() {
     URL.revokeObjectURL(url)
   }
 
+  const handleClearReports = async () => {
+    const confirmed = confirm('This will permanently delete all usage history. Continue?')
+    if (!confirmed) return
+
+    setIsClearing(true)
+    try {
+      await clearSessions()
+      setLoading(true)
+      await loadReportData()
+    } catch (error) {
+      console.error('Error clearing reports:', error)
+      alert('Failed to clear reports. Please try again.')
+    } finally {
+      setIsClearing(false)
+    }
+  }
+
   const formatDuration = (minutes: number): string => {
     if (minutes === 0) return '0m'
     if (minutes < 60) return `${minutes}m`
@@ -191,12 +209,25 @@ export default function Reports() {
             </button>
           </div>
         </div>
-        <button
-          onClick={exportToCSV}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          Export CSV
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleClearReports}
+            disabled={isClearing}
+            className={`px-4 py-2 rounded-md transition-colors ${
+              isClearing
+                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                : 'bg-red-600 text-white hover:bg-red-700'
+            }`}
+          >
+            {isClearing ? 'Clearing...' : 'Clear Reports'}
+          </button>
+          <button
+            onClick={exportToCSV}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Export CSV
+          </button>
+        </div>
       </div>
 
       {/* Data Table */}

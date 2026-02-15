@@ -614,6 +614,21 @@ export const updateSession = async (sessionId: number, updates: {
   }
 }
 
+export const clearSessions = async (): Promise<void> => {
+  try {
+    const userId = await getCurrentUserId()
+    const { error } = await supabase
+      .from('sessions')
+      .delete()
+      .eq('user_id', userId)
+    
+    if (error) throw error
+  } catch (error) {
+    console.error('Error clearing sessions:', error)
+    throw error
+  }
+}
+
 // Authentication helpers
 export const signIn = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signInWithPassword({
