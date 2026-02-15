@@ -80,17 +80,18 @@ export const cleanupDuplicateAssets = async (): Promise<void> => {
     }
     
     // Group by type and label to find duplicates
+    type Asset = typeof allAssets[0]
     const grouped = allAssets.reduce((acc, asset) => {
       const key = `${asset.type}-${asset.label}`
       if (!acc[key]) acc[key] = []
       acc[key].push(asset)
       return acc
-    }, {} as Record<string, typeof allAssets>)
+    }, {} as Record<string, Asset[]>)
     
     // Find duplicates and keep only the first (oldest) one
     const assetsToDelete: number[] = []
     
-    Object.entries(grouped).forEach(([key, assets]) => {
+    Object.entries(grouped).forEach(([key, assets]: [string, Asset[]]) => {
       if (assets.length > 1) {
         console.log(`🗑️  Found ${assets.length} duplicates for ${key}, keeping ID:${assets[0].id}`)
         // Keep the first one, mark the rest for deletion

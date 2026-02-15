@@ -149,7 +149,7 @@ export default function Reports() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-lg">Loading reports...</div>
+        <div className="text-lg text-gray-600">Loading reports...</div>
       </div>
     )
   }
