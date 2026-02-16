@@ -44,35 +44,43 @@ const checkSupabaseConfig = () => {
   }
 }
 
+// Cache user ID to avoid repeated auth calls
+let cachedUserId: string | null = null
+
 // Get current user ID or throw error
 const getCurrentUserId = async (): Promise<string> => {
+  // Return cached value if available
+  if (cachedUserId) {
+    return cachedUserId
+  }
+  
   checkSupabaseConfig()
   try {
-    // Add timeout to auth calls
-    const authTimeout = new Promise<never>((_, reject) => 
-      setTimeout(() => reject(new Error('Auth call timeout')), 5000)
-    )
-    
-    // Try to get session from local storage first (faster)
-    const sessionPromise = supabase.auth.getSession()
-    const { data: { session } } = await Promise.race([sessionPromise, authTimeout])
+    // Try to get session from local storage first (synchronous, faster)
+    const { data: { session } } = await supabase.auth.getSession()
     
     if (session?.user) {
-      return session.user.id
+      cachedUserId = session.user.id
+      return cachedUserId
     }
     
     // Fallback to getUser if no session
-    const userPromise = supabase.auth.getUser()
-    const { data: { user }, error } = await Promise.race([userPromise, authTimeout])
+    const { data: { user }, error } = await supabase.auth.getUser()
     
     if (error || !user) {
       throw new Error('Not authenticated')
     }
-    return user.id
+    cachedUserId = user.id
+    return cachedUserId
   } catch (error) {
     console.error('❌ Error getting user ID:', error)
     throw error
   }
+}
+
+// Clear cached user ID (call on logout)
+export const clearUserIdCache = () => {
+  cachedUserId = null
 }
 
 // Clean up duplicate assets for current user
@@ -667,6 +675,7 @@ export const signUp = async (email: string, password: string) => {
 }
 
 export const signOut = async () => {
+  clearUserIdCache()
   const { error } = await supabase.auth.signOut()
   return { error }
 }
