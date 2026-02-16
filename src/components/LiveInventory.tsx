@@ -169,17 +169,20 @@ export default function LiveInventory() {
       try {
         await Promise.race([
           initializeAndLoad(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Initialization timeout')), 20000))
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Initialization timeout')), 30000))
         ])
       } catch (error) {
-        console.warn('⚠️ Initialization timed out, trying fallback...', error)
-        setLoading(false)
-        // Try a simple asset load as fallback
+        console.warn('⚠️ Initialization timed out, trying direct approach...', error)
+        // Try a direct load without waiting - polling will handle updates
         try {
-          console.log('🔄 Trying fallback asset load...')
+          console.log('🔄 Attempting direct asset load...')
+          // Don't wait for initializeUserData, just try to load what exists
           await loadAssets()
+          console.log('✅ Direct load completed')
         } catch (fallbackError) {
-          console.error('❌ Fallback load also failed:', fallbackError)
+          console.error('❌ Fallback load failed:', fallbackError)
+          // Still clear loading state so UI is not stuck
+          setLoading(false)
         }
       }
     }
