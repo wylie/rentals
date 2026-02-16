@@ -49,15 +49,26 @@ const getCurrentUserId = async (): Promise<string> => {
   checkSupabaseConfig()
   console.log('🔐 Getting user from Supabase auth...')
   try {
+    // Add timeout to auth calls
+    const authTimeout = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('Auth call timeout')), 5000)
+    )
+    
     // Try to get session from local storage first (faster)
-    const { data: { session } } = await supabase.auth.getSession()
+    console.log('  → Checking local session...')
+    const sessionPromise = supabase.auth.getSession()
+    const { data: { session } } = await Promise.race([sessionPromise, authTimeout])
+    
     if (session?.user) {
       console.log(`👤 User ID from session: ${session.user.id}`)
       return session.user.id
     }
     
     // Fallback to getUser if no session
-    const { data: { user }, error } = await supabase.auth.getUser()
+    console.log('  → No session, calling getUser...')
+    const userPromise = supabase.auth.getUser()
+    const { data: { user }, error } = await Promise.race([userPromise, authTimeout])
+    
     console.log('✅ Auth response received:', { hasUser: !!user, error: error?.message })
     if (error || !user) {
       throw new Error('Not authenticated')

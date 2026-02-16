@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { 
-  initializeUserData, 
   getAssetsWithState, 
   updateAssetState, 
   createSession, 
@@ -153,29 +152,18 @@ export default function LiveInventory() {
     
     const initializeAndLoad = async () => {
       try {
-        console.log('🚀 Starting initialization...')
-        
-        // Add timeout wrapper for initialization
-        const initPromise = initializeUserData()
-        const timeoutPromise = new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('⏱️ InitializeUserData timeout after 15s')), 15000)
-        )
-        
-        await Promise.race([initPromise, timeoutPromise])
-        console.log('✅ User data initialized')
-        
-        console.log('📦 Loading assets...')
+        console.log('� Loading assets...')
         await loadAssets()
         console.log('✅ Assets loaded successfully')
         
-        // Only start polling after successful initialization
+        // Only start polling after successful load
         console.log('🔄 Starting polling for multi-device sync (every 3 seconds)')
         pollInterval = setInterval(() => {
           loadAssets()
         }, 3000)
         
       } catch (error) {
-        console.error('❌ Error in initialization:', error)
+        console.error('❌ Error loading assets:', error)
         setLoading(false) // Make sure loading state is cleared even on error
       }
     }
