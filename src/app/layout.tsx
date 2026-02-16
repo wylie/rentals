@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Rental Management',
   description: 'Bike and Helmet Rental Inventory Management System',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({
