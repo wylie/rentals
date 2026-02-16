@@ -154,7 +154,14 @@ export default function LiveInventory() {
     const initializeAndLoad = async () => {
       try {
         console.log('🚀 Starting initialization...')
-        await initializeUserData()
+        
+        // Add timeout wrapper for initialization
+        const initPromise = initializeUserData()
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('⏱️ InitializeUserData timeout after 15s')), 15000)
+        )
+        
+        await Promise.race([initPromise, timeoutPromise])
         console.log('✅ User data initialized')
         
         console.log('📦 Loading assets...')

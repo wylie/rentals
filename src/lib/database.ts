@@ -47,11 +47,27 @@ const checkSupabaseConfig = () => {
 // Get current user ID or throw error
 const getCurrentUserId = async (): Promise<string> => {
   checkSupabaseConfig()
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) {
-    throw new Error('Not authenticated')
+  console.log('🔐 Getting user from Supabase auth...')
+  try {
+    // Try to get session from local storage first (faster)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) {
+      console.log(`👤 User ID from session: ${session.user.id}`)
+      return session.user.id
+    }
+    
+    // Fallback to getUser if no session
+    const { data: { user }, error } = await supabase.auth.getUser()
+    console.log('✅ Auth response received:', { hasUser: !!user, error: error?.message })
+    if (error || !user) {
+      throw new Error('Not authenticated')
+    }
+    console.log(`👤 User ID: ${user.id}`)
+    return user.id
+  } catch (error) {
+    console.error('❌ Error getting user ID:', error)
+    throw error
   }
-  return user.id
 }
 
 // Clean up duplicate assets for current user
@@ -394,9 +410,12 @@ export const removeAssetsFromFleet = async (type: 'bike' | 'helmet', count: numb
 // Initialize data for new user
 export const initializeUserData = async (): Promise<void> => {
   try {
+    console.log('📍 Step 1: Getting current user ID...')
     const userId = await getCurrentUserId()
+    console.log(`✅ Got user ID: ${userId}`)
     
     // Check if user already has data
+    console.log('📍 Step 2: Checking for existing assets...')
     const { data: existingAssets, error: checkError } = await supabase
       .from('assets')
       .select('id')
