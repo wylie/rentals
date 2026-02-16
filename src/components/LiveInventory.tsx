@@ -149,6 +149,8 @@ export default function LiveInventory() {
 
   // Initialize data and set up polling for multi-device sync
   useEffect(() => {
+    let pollInterval: NodeJS.Timeout | null = null
+    
     const initializeAndLoad = async () => {
       try {
         console.log('🚀 Starting initialization...')
@@ -158,46 +160,26 @@ export default function LiveInventory() {
         console.log('📦 Loading assets...')
         await loadAssets()
         console.log('✅ Assets loaded successfully')
+        
+        // Only start polling after successful initialization
+        console.log('🔄 Starting polling for multi-device sync (every 3 seconds)')
+        pollInterval = setInterval(() => {
+          loadAssets()
+        }, 3000)
+        
       } catch (error) {
-        console.error('❌ Error in initializeAndLoad:', error)
+        console.error('❌ Error in initialization:', error)
         setLoading(false) // Make sure loading state is cleared even on error
       }
     }
 
-    // Add a safety timeout for the entire initialization
-    const safeInitialize = async () => {
-      try {
-        await Promise.race([
-          initializeAndLoad(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Initialization timeout')), 30000))
-        ])
-      } catch (error) {
-        console.warn('⚠️ Initialization timed out, trying direct approach...', error)
-        // Try a direct load without waiting - polling will handle updates
-        try {
-          console.log('🔄 Attempting direct asset load...')
-          // Don't wait for initializeUserData, just try to load what exists
-          await loadAssets()
-          console.log('✅ Direct load completed')
-        } catch (fallbackError) {
-          console.error('❌ Fallback load failed:', fallbackError)
-          // Still clear loading state so UI is not stuck
-          setLoading(false)
-        }
-      }
-    }
-
-    safeInitialize()
-
-    // Poll for updates every 3 seconds for multi-device sync
-    console.log('🔄 Starting polling for multi-device sync (every 3 seconds)')
-    const pollInterval = setInterval(() => {
-      loadAssets()
-    }, 3000)
+    initializeAndLoad()
     
     return () => {
-      console.log('🛑 Stopping polling')
-      clearInterval(pollInterval)
+      if (pollInterval) {
+        console.log('🛑 Stopping polling')
+        clearInterval(pollInterval)
+      }
     }
   }, [])
 
