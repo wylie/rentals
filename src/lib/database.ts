@@ -47,7 +47,6 @@ const checkSupabaseConfig = () => {
 // Get current user ID or throw error
 const getCurrentUserId = async (): Promise<string> => {
   checkSupabaseConfig()
-  console.log('🔐 Getting user from Supabase auth...')
   try {
     // Add timeout to auth calls
     const authTimeout = new Promise<never>((_, reject) => 
@@ -55,25 +54,20 @@ const getCurrentUserId = async (): Promise<string> => {
     )
     
     // Try to get session from local storage first (faster)
-    console.log('  → Checking local session...')
     const sessionPromise = supabase.auth.getSession()
     const { data: { session } } = await Promise.race([sessionPromise, authTimeout])
     
     if (session?.user) {
-      console.log(`👤 User ID from session: ${session.user.id}`)
       return session.user.id
     }
     
     // Fallback to getUser if no session
-    console.log('  → No session, calling getUser...')
     const userPromise = supabase.auth.getUser()
     const { data: { user }, error } = await Promise.race([userPromise, authTimeout])
     
-    console.log('✅ Auth response received:', { hasUser: !!user, error: error?.message })
     if (error || !user) {
       throw new Error('Not authenticated')
     }
-    console.log(`👤 User ID: ${user.id}`)
     return user.id
   } catch (error) {
     console.error('❌ Error getting user ID:', error)
@@ -421,12 +415,9 @@ export const removeAssetsFromFleet = async (type: 'bike' | 'helmet', count: numb
 // Initialize data for new user
 export const initializeUserData = async (): Promise<void> => {
   try {
-    console.log('📍 Step 1: Getting current user ID...')
     const userId = await getCurrentUserId()
-    console.log(`✅ Got user ID: ${userId}`)
     
     // Check if user already has data
-    console.log('📍 Step 2: Checking for existing assets...')
     const { data: existingAssets, error: checkError } = await supabase
       .from('assets')
       .select('id')
@@ -438,8 +429,6 @@ export const initializeUserData = async (): Promise<void> => {
       console.error('Error checking existing assets:', checkError)
       throw checkError
     }
-    
-    console.log(`🔍 Checking existing active assets for user ${userId}:`, existingAssets?.length || 0)
     
     if (existingAssets && existingAssets.length > 0) {
       console.log('✅ User already has active data, skipping initialization')

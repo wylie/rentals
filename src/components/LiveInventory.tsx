@@ -152,12 +152,9 @@ export default function LiveInventory() {
     
     const initializeAndLoad = async () => {
       try {
-        console.log('� Loading assets...')
         await loadAssets()
-        console.log('✅ Assets loaded successfully')
         
         // Only start polling after successful load
-        console.log('🔄 Starting polling for multi-device sync (every 3 seconds)')
         pollInterval = setInterval(() => {
           loadAssets()
         }, 3000)
@@ -172,7 +169,6 @@ export default function LiveInventory() {
     
     return () => {
       if (pollInterval) {
-        console.log('🛑 Stopping polling')
         clearInterval(pollInterval)
       }
     }
