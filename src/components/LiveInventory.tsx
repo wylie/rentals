@@ -169,10 +169,10 @@ export default function LiveInventory() {
       try {
         await Promise.race([
           initializeAndLoad(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Initialization timeout')), 10000))
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Initialization timeout')), 20000))
         ])
       } catch (error) {
-        console.error('❌ Initialization failed or timed out:', error)
+        console.warn('⚠️ Initialization timed out, trying fallback...', error)
         setLoading(false)
         // Try a simple asset load as fallback
         try {
