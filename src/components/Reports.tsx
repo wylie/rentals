@@ -2,9 +2,11 @@
 
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { clearSessions, getAssets, getSessions, type Asset, type Session } from '@/lib/database'
+import { getAssetSubcategoryName, getSubcategorySettings } from '@/lib/subcategories'
 
 interface ReportData {
   asset: Asset
+  subcategoryName: string
   todayDuration: number
   weekDuration: number
   todaySessions: number
@@ -15,12 +17,14 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
   const [reportData, setReportData] = useState<ReportData[]>([])
   const [loading, setLoading] = useState(true)
   const [assetType, setAssetType] = useState<'bike' | 'helmet'>('bike')
+  const [selectedSubcategory, setSelectedSubcategory] = useState('all')
 
   const loadReportData = async () => {
     try {
       // Get all assets first
       const allAssets = await getAssets()
       const activeAssets = allAssets.filter(asset => asset.active)
+      const subcategorySettings = getSubcategorySettings()
       
       // Calculate date ranges
       const now = new Date()
@@ -63,6 +67,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
 
         return {
           asset,
+          subcategoryName: getAssetSubcategoryName(asset, subcategorySettings) || 'Uncategorized',
           todayDuration,
           weekDuration,
           todaySessions: todaySessions.length,
@@ -81,6 +86,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
   const exportToCSV = () => {
     const headers = [
       assetType === 'bike' ? 'Bike' : 'Helmet',
+      'Subcategory',
       'Today Sessions',
       'Today Duration (min)',
       'Today Avg (min)',
@@ -91,8 +97,10 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
 
     const csvData = reportData
       .filter(item => item.asset.type === assetType)
+      .filter(item => selectedSubcategory === 'all' || item.subcategoryName === selectedSubcategory)
       .map(data => [
       data.asset.label,
+      data.subcategoryName,
       data.todaySessions,
       data.todayDuration,
       data.todaySessions > 0 ? Math.round(data.todayDuration / data.todaySessions) : 0,
@@ -109,7 +117,10 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `${assetType}-usage-report-${new Date().toISOString().split('T')[0]}.csv`
+    const subcategorySuffix = selectedSubcategory === 'all'
+      ? 'all-subcategories'
+      : selectedSubcategory.toLowerCase().replace(/\s+/g, '-')
+    link.download = `${assetType}-${subcategorySuffix}-usage-report-${new Date().toISOString().split('T')[0]}.csv`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -144,6 +155,10 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
     loadReportData()
   }, [])
 
+  useEffect(() => {
+    setSelectedSubcategory('all')
+  }, [assetType])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -152,7 +167,16 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
     )
   }
 
-  const filteredReportData = reportData.filter(item => item.asset.type === assetType)
+  const typeReportData = reportData.filter(item => item.asset.type === assetType)
+  const availableSubcategories = [...new Set(typeReportData.map((item) => item.subcategoryName))].sort((a, b) => {
+    if (a === 'Uncategorized') return 1
+    if (b === 'Uncategorized') return -1
+    return a.localeCompare(b)
+  })
+
+  const filteredReportData = typeReportData.filter((item) =>
+    selectedSubcategory === 'all' || item.subcategoryName === selectedSubcategory
+  )
   const totalTodaySessions = filteredReportData.reduce((sum, item) => sum + item.todaySessions, 0)
   const totalTodayDuration = filteredReportData.reduce((sum, item) => sum + item.todayDuration, 0)
   const totalWeekSessions = filteredReportData.reduce((sum, item) => sum + item.weekSessions, 0)
@@ -182,7 +206,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
 
       {/* Header and Export */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 flex-wrap gap-y-2">
           <h2 className="text-2xl font-bold text-gray-800">Usage Report</h2>
           <div className="inline-flex rounded-md shadow-sm" role="group">
             <button
@@ -208,6 +232,22 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
               <span>Helmets</span>
             </button>
           </div>
+          <div className="flex items-center space-x-2 ml-0 sm:ml-2">
+            <label htmlFor="subcategoryFilter" className="text-sm font-medium text-gray-700">Subcategory</label>
+            <select
+              id="subcategoryFilter"
+              value={selectedSubcategory}
+              onChange={(e) => setSelectedSubcategory(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All</option>
+              {availableSubcategories.map((subcategoryName) => (
+                <option key={subcategoryName} value={subcategoryName}>
+                  {subcategoryName}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <div>
           <button
@@ -228,6 +268,9 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {assetType === 'bike' ? 'Bike' : 'Helmet'}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Subcategory
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Today Sessions
@@ -258,6 +301,9 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
                   <tr key={data.asset.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {data.asset.label}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {data.subcategoryName}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                       {data.todaySessions}

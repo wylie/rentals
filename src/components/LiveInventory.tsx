@@ -9,6 +9,7 @@ import {
   getAssetStates,
   type AssetsWithState 
 } from '@/lib/database'
+import { getAssetSubcategoryName, getSubcategorySettings, type SubcategorySettings } from '@/lib/subcategories'
 
 interface AssetButtonProps {
   asset: AssetsWithState
@@ -53,6 +54,7 @@ function AssetButton({ asset, onToggle, isLoading }: AssetButtonProps) {
 
 export default function LiveInventory() {
   const [assets, setAssets] = useState<AssetsWithState[]>([])
+  const [subcategorySettings, setSubcategorySettings] = useState<SubcategorySettings>({ bike: [], helmet: [] })
   const [loading, setLoading] = useState(true)
   const [toggleLoading, setToggleLoading] = useState<number | null>(null)
   const [loadStartTime] = useState(Date.now())
@@ -87,6 +89,7 @@ export default function LiveInventory() {
       
       console.log(`📊 Total assets loaded: ${assetsData.length}`)
       setAssets(assetsData)
+      setSubcategorySettings(getSubcategorySettings())
     } catch (error) {
       console.error('Error loading assets:', error)
     } finally {
@@ -204,37 +207,49 @@ export default function LiveInventory() {
   const bikes = assets.filter(asset => asset.type === 'bike')
   const helmets = assets.filter(asset => asset.type === 'helmet')
 
+  const renderGroupedAssets = (typeAssets: AssetsWithState[], typeLabel: string) => {
+    const groups = typeAssets.reduce<Record<string, AssetsWithState[]>>((acc, asset) => {
+      const subcategoryName = getAssetSubcategoryName(asset, subcategorySettings) || 'Uncategorized'
+      if (!acc[subcategoryName]) {
+        acc[subcategoryName] = []
+      }
+      acc[subcategoryName].push(asset)
+      return acc
+    }, {})
+
+    const orderedGroupNames = [
+      ...Object.keys(groups).filter((name) => name !== 'Uncategorized').sort((a, b) => a.localeCompare(b)),
+      ...Object.keys(groups).filter((name) => name === 'Uncategorized')
+    ]
+
+    return (
+      <div>
+        <h2 className="text-2xl font-bold mb-4 text-gray-800">{typeLabel}</h2>
+        <div className="space-y-4">
+          {orderedGroupNames.map((groupName) => (
+            <div key={groupName} className="space-y-2">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-600">{groupName}</h3>
+              <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+                {groups[groupName].map((asset) => (
+                  <AssetButton
+                    key={asset.id}
+                    asset={asset}
+                    onToggle={toggleAssetStatus}
+                    isLoading={toggleLoading === asset.id}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8">
-      {/* Bikes Section */}
-      <div>
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">Bikes</h2>
-        <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
-          {bikes.map((asset) => (
-            <AssetButton
-              key={asset.id}
-              asset={asset}
-              onToggle={toggleAssetStatus}
-              isLoading={toggleLoading === asset.id}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Helmets Section */}
-      <div>
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">Helmets</h2>
-        <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
-          {helmets.map((asset) => (
-            <AssetButton
-              key={asset.id}
-              asset={asset}
-              onToggle={toggleAssetStatus}
-              isLoading={toggleLoading === asset.id}
-            />
-          ))}
-        </div>
-      </div>
+      {renderGroupedAssets(bikes, 'Bikes')}
+      {renderGroupedAssets(helmets, 'Helmets')}
     </div>
   )
 }

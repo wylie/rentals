@@ -3,6 +3,13 @@
 import { useState } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import { getFleetCounts, addAssetsToFleet, removeAssetsFromFleet, forceFleetReset } from '@/lib/database'
+import {
+  type AssetType,
+  type SubcategorySettings,
+  createSubcategory,
+  getSubcategorySettings,
+  saveSubcategorySettings
+} from '@/lib/subcategories'
 
 interface NavigationProps {
   currentView: 'inventory' | 'reports'
@@ -10,7 +17,7 @@ interface NavigationProps {
   onClearReports?: () => Promise<void>
 }
 
-type SettingsTab = 'session' | 'fleet' | 'pin' | 'company' | 'reports' | 'logout'
+type SettingsTab = 'session' | 'fleet' | 'subcategories' | 'pin' | 'company' | 'reports' | 'logout'
 
 export default function Navigation({ currentView, onViewChange, onClearReports }: NavigationProps) {
   const [showSettings, setShowSettings] = useState(false)
@@ -27,7 +34,88 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
   const [pinError, setPinError] = useState('')
   const [tempCompanyName, setTempCompanyName] = useState('')
   const [clearReportsChecked, setClearReportsChecked] = useState(false)
+  const [tempSubcategories, setTempSubcategories] = useState<SubcategorySettings>({ bike: [], helmet: [] })
+  const [fleetNumberInputs, setFleetNumberInputs] = useState<Record<string, string>>({})
   const { sessionTimeoutHours, companyName, setSessionTimeout, setCompanyName, changePin, logout } = useApp()
+
+  const inputKey = (type: AssetType, subcategoryId: string) => `${type}-${subcategoryId}`
+
+  const updateSubcategoryName = (type: AssetType, subcategoryId: string, name: string) => {
+    setTempSubcategories((prev) => ({
+      ...prev,
+      [type]: prev[type].map((subcategory) =>
+        subcategory.id === subcategoryId ? { ...subcategory, name } : subcategory
+      )
+    }))
+  }
+
+  const handleAddSubcategory = (type: AssetType) => {
+    setTempSubcategories((prev) => ({
+      ...prev,
+      [type]: [...prev[type], createSubcategory()]
+    }))
+  }
+
+  const handleRemoveSubcategory = (type: AssetType, subcategoryId: string) => {
+    setTempSubcategories((prev) => ({
+      ...prev,
+      [type]: prev[type].filter((subcategory) => subcategory.id !== subcategoryId)
+    }))
+
+    setFleetNumberInputs((prev) => {
+      const updated = { ...prev }
+      delete updated[inputKey(type, subcategoryId)]
+      return updated
+    })
+  }
+
+  const handleAddFleetNumber = (type: AssetType, subcategoryId: string) => {
+    const key = inputKey(type, subcategoryId)
+    const rawValue = fleetNumberInputs[key] || ''
+    const fleetNumber = parseInt(rawValue, 10)
+
+    if (!Number.isFinite(fleetNumber) || fleetNumber <= 0) {
+      return
+    }
+
+    setTempSubcategories((prev) => {
+      const updatedTypeSubcategories = prev[type].map((subcategory) => {
+        const withoutFleetNumber = subcategory.fleetNumbers.filter((number) => number !== fleetNumber)
+        if (subcategory.id === subcategoryId) {
+          return {
+            ...subcategory,
+            fleetNumbers: [...withoutFleetNumber, fleetNumber].sort((a, b) => a - b)
+          }
+        }
+
+        return {
+          ...subcategory,
+          fleetNumbers: withoutFleetNumber
+        }
+      })
+
+      return {
+        ...prev,
+        [type]: updatedTypeSubcategories
+      }
+    })
+
+    setFleetNumberInputs((prev) => ({
+      ...prev,
+      [key]: ''
+    }))
+  }
+
+  const handleRemoveFleetNumber = (type: AssetType, subcategoryId: string, fleetNumber: number) => {
+    setTempSubcategories((prev) => ({
+      ...prev,
+      [type]: prev[type].map((subcategory) =>
+        subcategory.id === subcategoryId
+          ? { ...subcategory, fleetNumbers: subcategory.fleetNumbers.filter((number) => number !== fleetNumber) }
+          : subcategory
+      )
+    }))
+  }
 
   const handleOpenSettings = async () => {
     setTempTimeout(sessionTimeoutHours.toString())
@@ -52,6 +140,9 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
     } catch (error) {
       console.error('Error loading fleet counts:', error)
     }
+
+    setTempSubcategories(getSubcategorySettings())
+    setFleetNumberInputs({})
     
     setShowSettings(true)
   }
@@ -70,6 +161,8 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
 
       // Update company name
       setCompanyName(tempCompanyName)
+
+      saveSubcategorySettings(tempSubcategories)
       
       // Update PIN if all fields are filled
       if (currentPin.trim() || newPin.trim() || confirmPin.trim()) {
@@ -262,6 +355,17 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
                   <span>Fleet</span>
                 </button>
                 <button
+                  onClick={() => setActiveTab('subcategories')}
+                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                    activeTab === 'subcategories'
+                      ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-lg">category</span>
+                  <span>Subcategories</span>
+                </button>
+                <button
                   onClick={() => setActiveTab('pin')}
                   className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === 'pin'
@@ -447,6 +551,116 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
                       </ul>
                     </div>
                   )}
+                </div>
+              )}
+
+              {activeTab === 'subcategories' && (
+                <div className="space-y-6">
+                  <p className="text-sm text-gray-600">
+                    Create subcategories for Bikes and Helmets, rename them, and assign fleet numbers to each one.
+                  </p>
+
+                  {(['bike', 'helmet'] as AssetType[]).map((type) => {
+                    const heading = type === 'bike' ? 'Bikes' : 'Helmets'
+                    const icon = type === 'bike' ? 'pedal_bike' : 'sports_motorsports'
+
+                    return (
+                      <div key={type} className="border border-gray-200 rounded-lg p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <span className="material-symbols-outlined text-blue-600">{icon}</span>
+                            <h3 className="text-base font-semibold text-gray-900">{heading}</h3>
+                          </div>
+                          <button
+                            onClick={() => handleAddSubcategory(type)}
+                            className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
+                            disabled={isUpdatingFleet}
+                          >
+                            <span className="material-symbols-outlined text-base">add</span>
+                            <span>Add Subcategory</span>
+                          </button>
+                        </div>
+
+                        {tempSubcategories[type].length === 0 ? (
+                          <p className="text-sm text-gray-500">No subcategories yet.</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {tempSubcategories[type].map((subcategory) => {
+                              const key = inputKey(type, subcategory.id)
+                              return (
+                                <div key={subcategory.id} className="border border-gray-100 rounded-lg p-3 bg-gray-50 space-y-3">
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="text"
+                                      value={subcategory.name}
+                                      onChange={(e) => updateSubcategoryName(type, subcategory.id, e.target.value)}
+                                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      placeholder="Subcategory name"
+                                      disabled={isUpdatingFleet}
+                                      maxLength={40}
+                                    />
+                                    <button
+                                      onClick={() => handleRemoveSubcategory(type, subcategory.id)}
+                                      className="inline-flex items-center justify-center w-10 h-10 rounded-md bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+                                      disabled={isUpdatingFleet}
+                                      title="Remove subcategory"
+                                    >
+                                      <span className="material-symbols-outlined">delete</span>
+                                    </button>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={fleetNumberInputs[key] || ''}
+                                      onChange={(e) => setFleetNumberInputs((prev) => ({ ...prev, [key]: e.target.value }))}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.preventDefault()
+                                          handleAddFleetNumber(type, subcategory.id)
+                                        }
+                                      }}
+                                      className="w-28 px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      placeholder="Fleet #"
+                                      disabled={isUpdatingFleet}
+                                    />
+                                    <button
+                                      onClick={() => handleAddFleetNumber(type, subcategory.id)}
+                                      className="inline-flex items-center space-x-1 px-3 py-2 rounded-md bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors"
+                                      disabled={isUpdatingFleet}
+                                    >
+                                      <span className="material-symbols-outlined text-base">add</span>
+                                      <span>Add Number</span>
+                                    </button>
+                                  </div>
+
+                                  {subcategory.fleetNumbers.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                      {subcategory.fleetNumbers.map((fleetNumber) => (
+                                        <button
+                                          key={fleetNumber}
+                                          onClick={() => handleRemoveFleetNumber(type, subcategory.id, fleetNumber)}
+                                          className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors text-sm"
+                                          disabled={isUpdatingFleet}
+                                          title="Remove fleet number"
+                                        >
+                                          <span>#{fleetNumber}</span>
+                                          <span className="material-symbols-outlined text-sm">close</span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-gray-500">No fleet numbers assigned.</p>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
 
