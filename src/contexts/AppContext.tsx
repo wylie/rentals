@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { supabase, getAppLoginEmail, isAppLoginEmailConfigured, isSupabaseConfigured } from '@/lib/supabase'
 import { User } from '@supabase/supabase-js'
-import { initializeUserData, signOut as dbSignOut } from '@/lib/database'
+import { initializeUserData, signOut as dbSignOut, getAppSetting, setAppSetting } from '@/lib/database'
 
 interface AppContextType {
   isAuthenticated: boolean
@@ -21,6 +21,8 @@ interface AppContextType {
 // Storage keys
 const SESSION_TIMEOUT_KEY = 'rental_session_timeout'
 const COMPANY_NAME_KEY = 'rental_company_name'
+const CLOUD_SESSION_TIMEOUT_KEY = 'session_timeout_hours'
+const CLOUD_COMPANY_NAME_KEY = 'company_name'
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
@@ -31,6 +33,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [companyName, setCompanyNameState] = useState('')
 
   const isAuthenticated = !!user
+
+  const syncPreferencesFromCloud = async () => {
+    try {
+      const cloudTimeout = await getAppSetting(CLOUD_SESSION_TIMEOUT_KEY)
+      if (cloudTimeout) {
+        const timeoutHours = parseFloat(cloudTimeout)
+        if (timeoutHours > 0 && timeoutHours <= 168) {
+          setSessionTimeoutHours(timeoutHours)
+          localStorage.setItem(SESSION_TIMEOUT_KEY, timeoutHours.toString())
+        }
+      } else {
+        const localTimeout = localStorage.getItem(SESSION_TIMEOUT_KEY)
+        if (localTimeout) {
+          const timeoutHours = parseFloat(localTimeout)
+          if (timeoutHours > 0 && timeoutHours <= 168) {
+            await setAppSetting(CLOUD_SESSION_TIMEOUT_KEY, timeoutHours.toString())
+          }
+        }
+      }
+
+      const cloudCompanyName = await getAppSetting(CLOUD_COMPANY_NAME_KEY)
+      if (cloudCompanyName !== null) {
+        setCompanyNameState(cloudCompanyName)
+        localStorage.setItem(COMPANY_NAME_KEY, cloudCompanyName)
+      } else {
+        const localCompanyName = localStorage.getItem(COMPANY_NAME_KEY)
+        if (localCompanyName) {
+          await setAppSetting(CLOUD_COMPANY_NAME_KEY, localCompanyName)
+        }
+      }
+    } catch (error) {
+      console.error('Error syncing preferences from cloud:', error)
+    }
+  }
 
   // Load preferences and initialize auth on mount
   useEffect(() => {
@@ -70,6 +106,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           try {
             await initializeUserData()
+            await syncPreferencesFromCloud()
           } catch (error) {
             console.error('Error initializing user data:', error)
           }
@@ -93,6 +130,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           if (event === 'SIGNED_IN' && session?.user) {
             try {
               await initializeUserData()
+              await syncPreferencesFromCloud()
             } catch (error) {
               console.error('Error initializing user data:', error)
             }
@@ -115,12 +153,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (hours > 0 && hours <= 168) { // Between 1 minute and 1 week
       setSessionTimeoutHours(hours)
       localStorage.setItem(SESSION_TIMEOUT_KEY, hours.toString())
+      void setAppSetting(CLOUD_SESSION_TIMEOUT_KEY, hours.toString()).catch((error) => {
+        console.error('Error saving session timeout to cloud:', error)
+      })
     }
   }
 
   const setCompanyName = (name: string) => {
     setCompanyNameState(name)
     localStorage.setItem(COMPANY_NAME_KEY, name)
+    void setAppSetting(CLOUD_COMPANY_NAME_KEY, name).catch((error) => {
+      console.error('Error saving company name to cloud:', error)
+    })
   }
 
   const signInWithPin = async (pin: string) => {

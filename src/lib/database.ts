@@ -43,6 +43,15 @@ export interface AssetSubcategory {
   user_id: string
 }
 
+export interface AppSetting {
+  id: number
+  setting_key: string
+  setting_value: string
+  created_at: string
+  updated_at: string
+  user_id: string
+}
+
 export type AssetsWithState = Asset & {
   asset_state: AssetState[]
 }
@@ -100,6 +109,46 @@ export const replaceAssetSubcategories = async (
   if (insertError) {
     console.error('Error saving asset subcategories:', insertError)
     throw insertError
+  }
+}
+
+export const getAppSetting = async (settingKey: string): Promise<string | null> => {
+  try {
+    const userId = await getCurrentUserId()
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('setting_value')
+      .eq('user_id', userId)
+      .eq('setting_key', settingKey)
+      .maybeSingle()
+
+    if (error) throw error
+    return data?.setting_value ?? null
+  } catch (error) {
+    console.error(`Error fetching app setting (${settingKey}):`, error)
+    return null
+  }
+}
+
+export const setAppSetting = async (settingKey: string, settingValue: string): Promise<void> => {
+  const userId = await getCurrentUserId()
+
+  const { error } = await supabase
+    .from('app_settings')
+    .upsert(
+      {
+        setting_key: settingKey,
+        setting_value: settingValue,
+        user_id: userId
+      },
+      {
+        onConflict: 'user_id,setting_key'
+      }
+    )
+
+  if (error) {
+    console.error(`Error saving app setting (${settingKey}):`, error)
+    throw error
   }
 }
 

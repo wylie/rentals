@@ -37,8 +37,9 @@ This project has been upgraded from local storage to cloud-based data storage:
 2. Create a new project
 3. In the SQL Editor, run the contents of `supabase-schema.sql`
 4. Run `supabase-subcategories.sql` to sync subcategories across devices
-5. Get your project URL and API key from Settings → API
-6. Update `.env.local` with your credentials:
+5. Run `supabase-app-settings.sql` to sync app settings (company name/session timeout) across devices
+6. Get your project URL and API key from Settings → API
+7. Update `.env.local` with your credentials:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your_actual_supabase_project_url
@@ -105,6 +106,7 @@ All data is secured with Row Level Security (RLS) - users can only access their 
 - `/.env.local` - Supabase credentials
 - `/supabase-schema.sql` - Database setup script
 - `/supabase-subcategories.sql` - Subcategory sync schema script
+- `/supabase-app-settings.sql` - App settings sync schema script
 - `/SUPABASE_SETUP.md` - Detailed setup instructions
 
 ## 🛠️ Development
