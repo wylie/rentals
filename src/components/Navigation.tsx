@@ -141,7 +141,7 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
       console.error('Error loading fleet counts:', error)
     }
 
-    setTempSubcategories(getSubcategorySettings())
+    setTempSubcategories(await getSubcategorySettings())
     setFleetNumberInputs({})
     
     setShowSettings(true)
@@ -162,7 +162,7 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
       // Update company name
       setCompanyName(tempCompanyName)
 
-      saveSubcategorySettings(tempSubcategories)
+      await saveSubcategorySettings(tempSubcategories)
       
       // Update PIN if all fields are filled
       if (currentPin.trim() || newPin.trim() || confirmPin.trim()) {

@@ -1,3 +1,5 @@
+import { getAssetSubcategories, replaceAssetSubcategories } from './database'
+
 export type AssetType = 'bike' | 'helmet'
 
 export interface Subcategory {
@@ -44,7 +46,7 @@ const sanitizeSettings = (settings: SubcategorySettings): SubcategorySettings =>
   return { bike, helmet }
 }
 
-export const getSubcategorySettings = (): SubcategorySettings => {
+const getLocalSubcategorySettings = (): SubcategorySettings => {
   if (typeof window === 'undefined') {
     return defaultSettings
   }
@@ -61,18 +63,78 @@ export const getSubcategorySettings = (): SubcategorySettings => {
       helmet: Array.isArray(parsed.helmet) ? parsed.helmet : []
     })
   } catch (error) {
-    console.error('Error parsing subcategory settings:', error)
+    console.error('Error parsing local subcategory settings:', error)
     return defaultSettings
   }
 }
 
-export const saveSubcategorySettings = (settings: SubcategorySettings): void => {
+const saveLocalSubcategorySettings = (settings: SubcategorySettings): void => {
   if (typeof window === 'undefined') {
     return
   }
 
+  localStorage.setItem(SUBCATEGORY_SETTINGS_KEY, JSON.stringify(sanitizeSettings(settings)))
+}
+
+const hasAnySubcategories = (settings: SubcategorySettings): boolean =>
+  settings.bike.length > 0 || settings.helmet.length > 0
+
+const toDatabaseRows = (settings: SubcategorySettings) => [
+  ...settings.bike.map((subcategory) => ({
+    asset_type: 'bike' as const,
+    name: subcategory.name,
+    fleet_numbers: subcategory.fleetNumbers
+  })),
+  ...settings.helmet.map((subcategory) => ({
+    asset_type: 'helmet' as const,
+    name: subcategory.name,
+    fleet_numbers: subcategory.fleetNumbers
+  }))
+]
+
+const fromDatabaseRows = (
+  rows: Array<{ asset_type: AssetType; name: string; fleet_numbers: number[] }>
+): SubcategorySettings => {
+  const grouped: SubcategorySettings = { bike: [], helmet: [] }
+
+  rows.forEach((row) => {
+    grouped[row.asset_type].push({
+      id: crypto.randomUUID(),
+      name: row.name,
+      fleetNumbers: row.fleet_numbers || []
+    })
+  })
+
+  return sanitizeSettings(grouped)
+}
+
+export const getSubcategorySettings = async (): Promise<SubcategorySettings> => {
+  const localSettings = getLocalSubcategorySettings()
+
+  try {
+    const rows = await getAssetSubcategories()
+    if (rows.length > 0) {
+      const fromDb = fromDatabaseRows(rows)
+      saveLocalSubcategorySettings(fromDb)
+      return fromDb
+    }
+
+    if (hasAnySubcategories(localSettings)) {
+      await replaceAssetSubcategories(toDatabaseRows(localSettings))
+      return localSettings
+    }
+
+    return defaultSettings
+  } catch (error) {
+    console.error('Error loading subcategory settings from Supabase:', error)
+    return localSettings
+  }
+}
+
+export const saveSubcategorySettings = async (settings: SubcategorySettings): Promise<void> => {
   const sanitized = sanitizeSettings(settings)
-  localStorage.setItem(SUBCATEGORY_SETTINGS_KEY, JSON.stringify(sanitized))
+  saveLocalSubcategorySettings(sanitized)
+  await replaceAssetSubcategories(toDatabaseRows(sanitized))
 }
 
 export const parseFleetNumberFromLabel = (label: string): number | null => {

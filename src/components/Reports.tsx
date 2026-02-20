@@ -24,7 +24,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
       // Get all assets first
       const allAssets = await getAssets()
       const activeAssets = allAssets.filter(asset => asset.active)
-      const subcategorySettings = getSubcategorySettings()
+      const subcategorySettings = await getSubcategorySettings()
       
       // Calculate date ranges
       const now = new Date()
@@ -152,7 +152,22 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
   }
 
   useEffect(() => {
-    loadReportData()
+    let interval: NodeJS.Timeout | null = null
+
+    const initialize = async () => {
+      await loadReportData()
+      interval = setInterval(() => {
+        loadReportData()
+      }, 5000)
+    }
+
+    initialize()
+
+    return () => {
+      if (interval) {
+        clearInterval(interval)
+      }
+    }
   }, [])
 
   useEffect(() => {

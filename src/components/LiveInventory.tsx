@@ -89,7 +89,7 @@ export default function LiveInventory() {
       
       console.log(`📊 Total assets loaded: ${assetsData.length}`)
       setAssets(assetsData)
-      setSubcategorySettings(getSubcategorySettings())
+      setSubcategorySettings(await getSubcategorySettings())
     } catch (error) {
       console.error('Error loading assets:', error)
     } finally {

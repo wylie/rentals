@@ -13,6 +13,7 @@ This project has been updated to use Supabase for cloud database storage, which 
 1. In your Supabase dashboard, go to the **SQL Editor**
 2. Copy the contents of `supabase-schema.sql` (in the project root)
 3. Paste it into the SQL Editor and click **Run**
+4. Then run `supabase-subcategories.sql` to enable subcategory sync across devices
 
 This will create all the necessary tables and security policies.
 

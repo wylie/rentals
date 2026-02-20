@@ -33,8 +33,74 @@ export interface Session {
   user_id: string
 }
 
+export interface AssetSubcategory {
+  id: number
+  asset_type: 'bike' | 'helmet'
+  name: string
+  fleet_numbers: number[]
+  created_at: string
+  updated_at: string
+  user_id: string
+}
+
 export type AssetsWithState = Asset & {
   asset_state: AssetState[]
+}
+
+export const getAssetSubcategories = async (): Promise<AssetSubcategory[]> => {
+  try {
+    const userId = await getCurrentUserId()
+    const { data, error } = await supabase
+      .from('asset_subcategories')
+      .select('*')
+      .eq('user_id', userId)
+      .order('asset_type')
+      .order('name')
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching asset subcategories:', error)
+    return []
+  }
+}
+
+export const replaceAssetSubcategories = async (
+  subcategories: Array<{
+    asset_type: 'bike' | 'helmet'
+    name: string
+    fleet_numbers: number[]
+  }>
+): Promise<void> => {
+  const userId = await getCurrentUserId()
+
+  const { error: deleteError } = await supabase
+    .from('asset_subcategories')
+    .delete()
+    .eq('user_id', userId)
+
+  if (deleteError) {
+    console.error('Error clearing asset subcategories:', deleteError)
+    throw deleteError
+  }
+
+  if (subcategories.length === 0) {
+    return
+  }
+
+  const rows = subcategories.map((subcategory) => ({
+    ...subcategory,
+    user_id: userId
+  }))
+
+  const { error: insertError } = await supabase
+    .from('asset_subcategories')
+    .insert(rows)
+
+  if (insertError) {
+    console.error('Error saving asset subcategories:', insertError)
+    throw insertError
+  }
 }
 
 // Check if Supabase is properly configured
