@@ -19,15 +19,15 @@ export default function MainApp() {
     return <SupabaseConfigNotice />
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-lg">Loading...</div>
-      </div>
-    )
-  }
-
   if (!isAuthenticated) {
+    if (loading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-lg">Loading...</div>
+        </div>
+      )
+    }
+
     return <AuthScreen />
   }
 
