@@ -10,17 +10,19 @@ import {
   createBikeReturnCheck,
   type AssetsWithState 
 } from '@/lib/database'
-import { getAssetSubcategoryName, getSubcategorySettings, type SubcategorySettings } from '@/lib/subcategories'
+import { getAssetSubcategoryName, getSubcategorySettings, getDisplayLabel, type SubcategorySettings } from '@/lib/subcategories'
 import { useApp } from '@/contexts/AppContext'
 
 interface AssetButtonProps {
   asset: AssetsWithState
   onToggle: (assetId: number, currentlyInUse: boolean) => Promise<void>
   isLoading: boolean
+  subcategorySettings: SubcategorySettings
 }
 
-function AssetButton({ asset, onToggle, isLoading }: AssetButtonProps) {
+function AssetButton({ asset, onToggle, isLoading, subcategorySettings }: AssetButtonProps) {
   const isInUse = asset.asset_state[0]?.in_use || false
+  const displayLabel = getDisplayLabel(asset, subcategorySettings)
   
   return (
     <button
@@ -41,7 +43,7 @@ function AssetButton({ asset, onToggle, isLoading }: AssetButtonProps) {
       }`}>
         {asset.type === 'bike' ? 'pedal_bike' : 'sports_motorsports'}
       </span>
-      <div className="font-semibold text-xs">{asset.label}</div>
+      <div className="font-semibold text-xs">{displayLabel}</div>
       <div className={`flex items-center space-x-1 text-xs px-2 py-0.5 rounded ${
         isInUse ? 'bg-red-200 text-red-700' : 'bg-green-200 text-green-700'
       }`}>
@@ -126,10 +128,10 @@ export default function LiveInventory() {
         if (currentState?.current_session_id && asset.type === 'bike' && currentStation === 'Bike Park') {
           setPendingReturn({
             assetId: asset.id,
-            assetLabel: asset.label,
+            assetLabel: getDisplayLabel(asset, subcategorySettings),
             sessionId: currentState.current_session_id
           })
-          setReturnAnswers({ cleaned: null, needsMaintenance: null })
+          setReturnAnswers({ cleaned: null, needsMaintenance: null, maintenanceNotes: '' })
           setReturnError('')
           setShowReturnModal(true)
           setToggleLoading(null)
@@ -276,6 +278,7 @@ export default function LiveInventory() {
                     asset={asset}
                     onToggle={(assetId, currentlyInUse) => toggleAssetStatus(asset, currentlyInUse)}
                     isLoading={toggleLoading === asset.id}
+                    subcategorySettings={subcategorySettings}
                   />
                 ))}
               </div>

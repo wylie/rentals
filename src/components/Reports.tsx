@@ -8,10 +8,11 @@ import {
   getBikeReturnChecks,
   type Asset
 } from '@/lib/database'
-import { getAssetSubcategoryName, getSubcategorySettings } from '@/lib/subcategories'
+import { getAssetSubcategoryName, getSubcategorySettings, getDisplayLabel } from '@/lib/subcategories'
 
 interface ReportData {
   asset: Asset
+  displayLabel: string
   subcategoryName: string
   todayDuration: number
   weekDuration: number
@@ -84,6 +85,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
 
         return {
           asset,
+          displayLabel: getDisplayLabel(asset, subcategorySettings),
           subcategoryName: getAssetSubcategoryName(asset, subcategorySettings) || 'Uncategorized',
           todayDuration,
           weekDuration,
@@ -95,7 +97,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
       setReportData(processedData)
 
       const returnChecks = await getBikeReturnChecks()
-      const bikesById = new Map(activeAssets.map((asset) => [asset.id, asset.label]))
+      const bikesById = new Map(activeAssets.map((asset) => [asset.id, getDisplayLabel(asset, subcategorySettings)]))
       const returnRows: BikeReturnRow[] = returnChecks.map((check) => ({
         id: check.id,
         assetLabel: bikesById.get(check.asset_id) || `Bike ${check.asset_id}`,
@@ -155,7 +157,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
       .filter(item => item.asset.type === selectedAssetType)
       .filter(item => selectedSubcategory === 'all' || item.subcategoryName === selectedSubcategory)
       .map(data => [
-      data.asset.label,
+      data.displayLabel,
       data.subcategoryName,
       data.todaySessions,
       data.todayDuration,
@@ -472,7 +474,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
                     return (
                       <tr key={data.asset.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {data.asset.label}
+                          {data.displayLabel}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {data.subcategoryName}

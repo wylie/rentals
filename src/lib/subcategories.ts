@@ -164,6 +164,35 @@ export const getAssetSubcategoryName = (
   return match?.name || null
 }
 
+export const getDisplayLabel = (
+  asset: { type: AssetType; label: string },
+  settings: SubcategorySettings
+): string => {
+  const fleetNumber = parseFleetNumberFromLabel(asset.label)
+  if (!fleetNumber) {
+    return asset.label
+  }
+
+  const subcategoryName = getAssetSubcategoryName(asset, settings)
+  if (!subcategoryName) {
+    return asset.label
+  }
+
+  const typeSubcategories = settings[asset.type] || []
+  const subcategory = typeSubcategories.find((sub) => sub.name === subcategoryName)
+  
+  if (!subcategory) {
+    return asset.label
+  }
+
+  // Count how many fleet numbers in this subcategory are less than current fleet number
+  const sortedFleetNumbers = [...subcategory.fleetNumbers].sort((a, b) => a - b)
+  const positionInCategory = sortedFleetNumbers.indexOf(fleetNumber) + 1
+
+  const assetTypeLabel = asset.type === 'bike' ? 'Bike' : 'Helmet'
+  return `${assetTypeLabel} ${String(positionInCategory).padStart(2, '0')}`
+}
+
 export const createSubcategory = (): Subcategory => ({
   id: crypto.randomUUID(),
   name: 'New Subcategory',
