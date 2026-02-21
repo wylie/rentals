@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import Navigation from './Navigation'
 import LiveInventory from './LiveInventory'
@@ -14,6 +14,28 @@ export default function MainApp() {
   const [bikeParkView, setBikeParkView] = useState<'inventory' | 'reports'>('inventory')
   const { isAuthenticated, loading } = useApp()
   const reportsRef = useRef<{ clearReports: () => Promise<void> }>(null)
+
+  // Load saved tab preferences from localStorage
+  useEffect(() => {
+    const savedArea = localStorage.getItem('selectedArea') as 'frontdesk' | 'bikepark' | null
+    const savedBikeParkView = localStorage.getItem('selectedBikeParkView') as 'inventory' | 'reports' | null
+    
+    if (savedArea) {
+      setCurrentArea(savedArea)
+    }
+    if (savedBikeParkView) {
+      setBikeParkView(savedBikeParkView)
+    }
+  }, [])
+
+  // Save tab preferences to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('selectedArea', currentArea)
+  }, [currentArea])
+
+  useEffect(() => {
+    localStorage.setItem('selectedBikeParkView', bikeParkView)
+  }, [bikeParkView])
 
   // Show configuration notice if Supabase is not configured
   if (!isSupabaseConfigured()) {
