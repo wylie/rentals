@@ -167,6 +167,7 @@ export const createBikeReturnCheck = async (data: {
   asset_id: number
   cleaned: boolean
   needs_maintenance: boolean
+  maintenance_notes?: string | null
 }): Promise<void> => {
   const userId = await getCurrentUserId()
 

@@ -69,7 +69,8 @@ export default function LiveInventory() {
   const [returnAnswers, setReturnAnswers] = useState<{
     cleaned: boolean | null
     needsMaintenance: boolean | null
-  }>({ cleaned: null, needsMaintenance: null })
+    maintenanceNotes: string
+  }>({ cleaned: null, needsMaintenance: null, maintenanceNotes: '' })
   const [returnError, setReturnError] = useState('')
   const [returnSubmitting, setReturnSubmitting] = useState(false)
   const { currentStation } = useApp()
@@ -339,7 +340,7 @@ export default function LiveInventory() {
                     Yes
                   </button>
                   <button
-                    onClick={() => setReturnAnswers((prev) => ({ ...prev, needsMaintenance: false }))}
+                    onClick={() => setReturnAnswers((prev) => ({ ...prev, needsMaintenance: false, maintenanceNotes: '' }))}
                     className={`px-3 py-1.5 rounded-md text-sm border ${
                       returnAnswers.needsMaintenance === false
                         ? 'bg-gray-700 text-white border-gray-700'
@@ -350,6 +351,22 @@ export default function LiveInventory() {
                   </button>
                 </div>
               </div>
+
+              {returnAnswers.needsMaintenance === true && (
+                <div>
+                  <label htmlFor="maintenance-notes" className="block text-sm font-medium text-gray-700 mb-2">
+                    What maintenance is needed?
+                  </label>
+                  <textarea
+                    id="maintenance-notes"
+                    value={returnAnswers.maintenanceNotes}
+                    onChange={(e) => setReturnAnswers((prev) => ({ ...prev, maintenanceNotes: e.target.value }))}
+                    placeholder="e.g., Chain needs cleaning, brake pads need replacement, tire pressure low..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                  />
+                </div>
+              )}
 
               {returnError && (
                 <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
@@ -364,6 +381,7 @@ export default function LiveInventory() {
                   setShowReturnModal(false)
                   setPendingReturn(null)
                   setReturnError('')
+                  setReturnAnswers({ cleaned: null, needsMaintenance: null, maintenanceNotes: '' })
                 }}
                 className="flex-1 px-4 py-2 rounded-md bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors"
                 disabled={returnSubmitting}
@@ -394,7 +412,8 @@ export default function LiveInventory() {
                       session_id: pendingReturn.sessionId,
                       asset_id: pendingReturn.assetId,
                       cleaned: returnAnswers.cleaned,
-                      needs_maintenance: returnAnswers.needsMaintenance
+                      needs_maintenance: returnAnswers.needsMaintenance,
+                      maintenance_notes: returnAnswers.needsMaintenance ? returnAnswers.maintenanceNotes.trim() || null : null
                     })
                     console.log('✅ Bike return check created')
 
@@ -407,6 +426,7 @@ export default function LiveInventory() {
                     await loadAssets()
                     setShowReturnModal(false)
                     setPendingReturn(null)
+                    setReturnAnswers({ cleaned: null, needsMaintenance: null, maintenanceNotes: '' })
                   } catch (error: any) {
                     console.error('❌ Error completing bike return:', error)
                     const errorMsg = error?.message || error?.details || JSON.stringify(error) || 'Unknown error'

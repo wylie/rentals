@@ -24,6 +24,7 @@ interface BikeReturnRow {
   assetLabel: string
   cleaned: boolean
   needsMaintenance: boolean
+  maintenanceNotes: string | null
   createdAt: string
 }
 
@@ -100,6 +101,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
         assetLabel: bikesById.get(check.asset_id) || `Bike ${check.asset_id}`,
         cleaned: check.cleaned,
         needsMaintenance: check.needs_maintenance,
+        maintenanceNotes: check.maintenance_notes,
         createdAt: check.created_at
       }))
 
@@ -113,12 +115,13 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
 
   const exportToCSV = () => {
     if (reportView === 'maintenance') {
-      const headers = ['Bike', 'Returned At', 'Cleaned', 'Needs Maintenance']
+      const headers = ['Bike', 'Returned At', 'Cleaned', 'Needs Maintenance', 'Maintenance Notes']
       const csvData = bikeReturnRows.map((row) => [
         row.assetLabel,
         new Date(row.createdAt).toLocaleString(),
         row.cleaned ? 'Yes' : 'No',
-        row.needsMaintenance ? 'Yes' : 'No'
+        row.needsMaintenance ? 'Yes' : 'No',
+        row.maintenanceNotes || ''
       ])
 
       const csvContent = [headers, ...csvData]
@@ -489,6 +492,9 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Needs Maintenance
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Maintenance Notes
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -499,14 +505,17 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
                       <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
                       <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
                       <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
-                    </tr>
-                    <tr>
-                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
-                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
-                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
                       <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
                     </tr>
                     <tr>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
                       <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
                       <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
                       <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
@@ -527,6 +536,13 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                         {row.needsMaintenance ? 'Yes' : 'No'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {row.maintenanceNotes ? (
+                          <div className="whitespace-pre-wrap break-words">{row.maintenanceNotes}</div>
+                        ) : (
+                          <span className="text-gray-400">–</span>
+                        )}
                       </td>
                     </tr>
                   ))

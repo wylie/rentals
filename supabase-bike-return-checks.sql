@@ -7,6 +7,7 @@ create table if not exists public.bike_return_checks (
   asset_id bigint not null references public.assets(id) on delete cascade,
   cleaned boolean not null,
   needs_maintenance boolean not null,
+  maintenance_notes text,
   created_at timestamptz not null default now(),
   user_id uuid not null references auth.users(id) on delete cascade
 );
