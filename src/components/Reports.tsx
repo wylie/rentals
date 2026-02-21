@@ -31,7 +31,7 @@ interface BikeReturnRow {
 const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) => {
   const [reportData, setReportData] = useState<ReportData[]>([])
   const [loading, setLoading] = useState(true)
-  const assetType: 'bike' = 'bike'
+  const [selectedAssetType, setSelectedAssetType] = useState<'bike' | 'helmet'>('bike')
   const [selectedSubcategory, setSelectedSubcategory] = useState('all')
   const [reportView, setReportView] = useState<'usage' | 'maintenance'>('usage')
   const [bikeReturnRows, setBikeReturnRows] = useState<BikeReturnRow[]>([])
@@ -141,7 +141,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
     }
 
     const headers = [
-      assetType === 'bike' ? 'Bike' : 'Helmet',
+      selectedAssetType === 'bike' ? 'Bike' : 'Helmet',
       'Subcategory',
       'Today Sessions',
       'Today Duration (min)',
@@ -152,7 +152,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
     ]
 
     const csvData = reportData
-      .filter(item => item.asset.type === assetType)
+      .filter(item => item.asset.type === selectedAssetType)
       .filter(item => selectedSubcategory === 'all' || item.subcategoryName === selectedSubcategory)
       .map(data => [
       data.asset.label,
@@ -176,7 +176,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
     const subcategorySuffix = selectedSubcategory === 'all'
       ? 'all-subcategories'
       : selectedSubcategory.toLowerCase().replace(/\s+/g, '-')
-    link.download = `${assetType}-${subcategorySuffix}-usage-report-${new Date().toISOString().split('T')[0]}.csv`
+    link.download = `${selectedAssetType}-${subcategorySuffix}-usage-report-${new Date().toISOString().split('T')[0]}.csv`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -226,6 +226,11 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
     }
   }, [])
 
+  // Reset subcategory filter when asset type changes
+  useEffect(() => {
+    setSelectedSubcategory('all')
+  }, [selectedAssetType])
+
   const SkeletonCard = () => (
     <div className="bg-white p-4 rounded-lg shadow animate-pulse">
       <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
@@ -246,7 +251,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
     </tr>
   )
 
-  const typeReportData = reportData.filter(item => item.asset.type === assetType)
+  const typeReportData = reportData.filter(item => item.asset.type === selectedAssetType)
   const availableSubcategories = [...new Set(typeReportData.map((item) => item.subcategoryName))].sort((a, b) => {
     if (a === 'Uncategorized') return 1
     if (b === 'Uncategorized') return -1
@@ -365,22 +370,46 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
             <h2 className="text-2xl font-bold text-gray-800">Bike Park Maintenance Logs</h2>
           )}
           {reportView === 'usage' && (
-            <div className="flex items-center space-x-2 ml-0 sm:ml-2">
-            <label htmlFor="subcategoryFilter" className="text-sm font-medium text-gray-700">Subcategory</label>
-            <select
-              id="subcategoryFilter"
-              value={selectedSubcategory}
-              onChange={(e) => setSelectedSubcategory(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All</option>
-              {availableSubcategories.map((subcategoryName) => (
-                <option key={subcategoryName} value={subcategoryName}>
-                  {subcategoryName}
-                </option>
-              ))}
-            </select>
-          </div>
+            <div className="flex items-center flex-wrap gap-2">
+              <div className="inline-flex rounded-md shadow-sm" role="group">
+                <button
+                  onClick={() => setSelectedAssetType('bike')}
+                  className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-l-md transition-colors ${
+                    selectedAssetType === 'bike'
+                      ? 'bg-green-600 text-white border-green-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-lg">pedal_bike</span>
+                  <span>Bikes</span>
+                </button>
+                <button
+                  onClick={() => setSelectedAssetType('helmet')}
+                  className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-r-md transition-colors ${
+                    selectedAssetType === 'helmet'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-lg">sports_motorsports</span>
+                  <span>Helmets</span>
+                </button>
+              </div>
+              <label htmlFor="subcategoryFilter" className="text-sm font-medium text-gray-700">Subcategory</label>
+              <select
+                id="subcategoryFilter"
+                value={selectedSubcategory}
+                onChange={(e) => setSelectedSubcategory(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All</option>
+                {availableSubcategories.map((subcategoryName) => (
+                  <option key={subcategoryName} value={subcategoryName}>
+                    {subcategoryName}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
         </div>
         <div>
@@ -401,7 +430,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {assetType === 'bike' ? 'Bike' : 'Helmet'}
+                    {selectedAssetType === 'bike' ? 'Bike' : 'Helmet'}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Subcategory
