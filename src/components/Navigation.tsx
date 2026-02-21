@@ -12,14 +12,14 @@ import {
 } from '@/lib/subcategories'
 
 interface NavigationProps {
-  currentView: 'inventory' | 'reports'
-  onViewChange: (view: 'inventory' | 'reports') => void
+  currentArea: 'frontdesk' | 'bikepark'
+  onAreaChange: (area: 'frontdesk' | 'bikepark') => void
   onClearReports?: () => Promise<void>
 }
 
 type SettingsTab = 'session' | 'fleet' | 'subcategories' | 'pin' | 'company' | 'reports' | 'logout'
 
-export default function Navigation({ currentView, onViewChange, onClearReports }: NavigationProps) {
+export default function Navigation({ currentArea, onAreaChange, onClearReports }: NavigationProps) {
   const [showSettings, setShowSettings] = useState(false)
   const [activeTab, setActiveTab] = useState<SettingsTab>('session')
   const [tempTimeout, setTempTimeout] = useState('')
@@ -304,26 +304,32 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
             {/* Second Row: Navigation Links */}
             <div className="flex space-x-2">
               <button
-                onClick={() => onViewChange('inventory')}
+                onClick={() => {
+                  setCurrentStation('Main Location')
+                  onAreaChange('frontdesk')
+                }}
                 className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  currentView === 'inventory'
+                  currentArea === 'frontdesk'
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                <span className="material-symbols-outlined text-lg">inventory_2</span>
-                <span>Live Inventory</span>
+                <span className="material-symbols-outlined text-lg">storefront</span>
+                <span>Front Desk</span>
               </button>
               <button
-                onClick={() => onViewChange('reports')}
+                onClick={() => {
+                  setCurrentStation('Bike Park')
+                  onAreaChange('bikepark')
+                }}
                 className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  currentView === 'reports'
+                  currentArea === 'bikepark'
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                <span className="material-symbols-outlined text-lg">assessment</span>
-                <span>Reports</span>
+                <span className="material-symbols-outlined text-lg">bike_scooter</span>
+                <span>Bike Park</span>
               </button>
             </div>
           </div>

@@ -6,8 +6,7 @@ import {
   getAssets,
   getSessions,
   getBikeReturnChecks,
-  type Asset,
-  type Session
+  type Asset
 } from '@/lib/database'
 import { getAssetSubcategoryName, getSubcategorySettings } from '@/lib/subcategories'
 
@@ -31,9 +30,9 @@ interface BikeReturnRow {
 const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) => {
   const [reportData, setReportData] = useState<ReportData[]>([])
   const [loading, setLoading] = useState(true)
-  const [assetType, setAssetType] = useState<'bike' | 'helmet'>('bike')
+  const assetType: 'bike' = 'bike'
   const [selectedSubcategory, setSelectedSubcategory] = useState('all')
-  const [reportView, setReportView] = useState<'usage' | 'bike-park'>('usage')
+  const [reportView, setReportView] = useState<'usage' | 'maintenance'>('usage')
   const [bikeReturnRows, setBikeReturnRows] = useState<BikeReturnRow[]>([])
 
   const loadReportData = async () => {
@@ -113,7 +112,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
   }
 
   const exportToCSV = () => {
-    if (reportView === 'bike-park') {
+    if (reportView === 'maintenance') {
       const headers = ['Bike', 'Returned At', 'Cleaned', 'Needs Maintenance']
       const csvData = bikeReturnRows.map((row) => [
         row.assetLabel,
@@ -130,7 +129,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `bike-park-returns-${new Date().toISOString().split('T')[0]}.csv`
+      link.download = `bike-park-maintenance-${new Date().toISOString().split('T')[0]}.csv`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -224,10 +223,6 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
     }
   }, [])
 
-  useEffect(() => {
-    setSelectedSubcategory('all')
-  }, [assetType])
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -314,49 +309,23 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
               <span>Usage</span>
             </button>
             <button
-              onClick={() => setReportView('bike-park')}
+              onClick={() => setReportView('maintenance')}
               className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-r-md transition-colors ${
-                reportView === 'bike-park'
+                reportView === 'maintenance'
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
               }`}
             >
               <span className="material-symbols-outlined text-lg">fact_check</span>
-              <span>Bike Park</span>
+              <span>Maintenance Logs</span>
             </button>
           </div>
 
           {reportView === 'usage' && (
             <h2 className="text-2xl font-bold text-gray-800">Usage Report</h2>
           )}
-          {reportView === 'bike-park' && (
-            <h2 className="text-2xl font-bold text-gray-800">Bike Park Returns</h2>
-          )}
-          {reportView === 'usage' && (
-            <div className="inline-flex rounded-md shadow-sm" role="group">
-            <button
-              onClick={() => setAssetType('bike')}
-              className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-l-md transition-colors ${
-                assetType === 'bike'
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              <span className="material-symbols-outlined text-lg">pedal_bike</span>
-              <span>Bikes</span>
-            </button>
-            <button
-              onClick={() => setAssetType('helmet')}
-              className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-r-md transition-colors ${
-                assetType === 'helmet'
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              <span className="material-symbols-outlined text-lg">sports_motorsports</span>
-              <span>Helmets</span>
-            </button>
-          </div>
+          {reportView === 'maintenance' && (
+            <h2 className="text-2xl font-bold text-gray-800">Bike Park Maintenance Logs</h2>
           )}
           {reportView === 'usage' && (
             <div className="flex items-center space-x-2 ml-0 sm:ml-2">

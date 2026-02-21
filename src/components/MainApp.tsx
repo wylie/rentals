@@ -10,7 +10,7 @@ import SupabaseConfigNotice from './SupabaseConfigNotice'
 import { isSupabaseConfigured } from '@/lib/supabase'
 
 export default function MainApp() {
-  const [currentView, setCurrentView] = useState<'inventory' | 'reports'>('inventory')
+  const [currentArea, setCurrentArea] = useState<'frontdesk' | 'bikepark'>('frontdesk')
   const { isAuthenticated, loading } = useApp()
   const reportsRef = useRef<{ clearReports: () => Promise<void> }>(null)
 
@@ -34,8 +34,8 @@ export default function MainApp() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation 
-        currentView={currentView}
-        onViewChange={setCurrentView}
+        currentArea={currentArea}
+        onAreaChange={setCurrentArea}
         onClearReports={async () => {
           if (reportsRef.current) {
             await reportsRef.current.clearReports()
@@ -44,7 +44,7 @@ export default function MainApp() {
       />
       
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        {currentView === 'inventory' ? (
+        {currentArea === 'frontdesk' ? (
           <LiveInventory />
         ) : (
           <Reports ref={reportsRef} />
