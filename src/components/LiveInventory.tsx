@@ -7,9 +7,11 @@ import {
   createSession, 
   updateSession, 
   getAssetStates,
+  createBikeReturnCheck,
   type AssetsWithState 
 } from '@/lib/database'
 import { getAssetSubcategoryName, getSubcategorySettings, type SubcategorySettings } from '@/lib/subcategories'
+import { useApp } from '@/contexts/AppContext'
 
 interface AssetButtonProps {
   asset: AssetsWithState
@@ -58,6 +60,19 @@ export default function LiveInventory() {
   const [loading, setLoading] = useState(true)
   const [toggleLoading, setToggleLoading] = useState<number | null>(null)
   const [loadStartTime] = useState(Date.now())
+  const [showReturnModal, setShowReturnModal] = useState(false)
+  const [pendingReturn, setPendingReturn] = useState<{
+    assetId: number
+    assetLabel: string
+    sessionId: number
+  } | null>(null)
+  const [returnAnswers, setReturnAnswers] = useState<{
+    cleaned: boolean | null
+    needsMaintenance: boolean | null
+  }>({ cleaned: null, needsMaintenance: null })
+  const [returnError, setReturnError] = useState('')
+  const [returnSubmitting, setReturnSubmitting] = useState(false)
+  const { currentStation } = useApp()
 
   // Set global load start time for timeout detection
   useEffect(() => {
@@ -98,25 +113,36 @@ export default function LiveInventory() {
   }
 
   // Toggle asset status
-  const toggleAssetStatus = async (assetId: number, currentlyInUse: boolean) => {
-    setToggleLoading(assetId)
+  const toggleAssetStatus = async (asset: AssetsWithState, currentlyInUse: boolean) => {
+    setToggleLoading(asset.id)
     
     try {
       if (currentlyInUse) {
         // Asset is being returned
         const states = await getAssetStates()
-        const currentState = states.find(state => state.asset_id === assetId)
+        const currentState = states.find(state => state.asset_id === asset.id)
+
+        if (currentState?.current_session_id && asset.type === 'bike' && currentStation === 'Bike Park') {
+          setPendingReturn({
+            assetId: asset.id,
+            assetLabel: asset.label,
+            sessionId: currentState.current_session_id
+          })
+          setReturnAnswers({ cleaned: null, needsMaintenance: null })
+          setReturnError('')
+          setShowReturnModal(true)
+          setToggleLoading(null)
+          return
+        }
 
         if (currentState?.current_session_id) {
-          // Update session with return information
           await updateSession(currentState.current_session_id, {
             returned_at: new Date().toISOString(),
-            returned_station: 'Main Location'
+            returned_station: currentStation
           })
         }
 
-        // Update asset state
-        await updateAssetState(assetId, {
+        await updateAssetState(asset.id, {
           in_use: false,
           current_session_id: null
         })
@@ -125,15 +151,15 @@ export default function LiveInventory() {
         // Asset is being checked out
         // First create a new session
         const newSession = await createSession({
-          asset_id: assetId,
+          asset_id: asset.id,
           checked_out_at: new Date().toISOString(),
-          checked_out_station: 'Main Location',
+          checked_out_station: currentStation,
           checked_out_by: null
         })
 
         // Update asset state
         if (newSession) {
-          await updateAssetState(assetId, {
+          await updateAssetState(asset.id, {
             in_use: true,
             current_session_id: newSession.id
           })
@@ -247,7 +273,7 @@ export default function LiveInventory() {
                   <AssetButton
                     key={asset.id}
                     asset={asset}
-                    onToggle={toggleAssetStatus}
+                    onToggle={(assetId, currentlyInUse) => toggleAssetStatus(asset, currentlyInUse)}
                     isLoading={toggleLoading === asset.id}
                   />
                 ))}
@@ -263,6 +289,135 @@ export default function LiveInventory() {
     <div className="space-y-8">
       {renderGroupedAssets(bikes, 'Bikes')}
       {renderGroupedAssets(helmets, 'Helmets')}
+
+      {showReturnModal && pendingReturn && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 overflow-hidden">
+            <div className="p-6 border-b">
+              <h3 className="text-lg font-bold text-gray-900">Bike Park Return Checklist</h3>
+              <p className="text-sm text-gray-600 mt-1">{pendingReturn.assetLabel}</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">Has the bike been cleaned?</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setReturnAnswers((prev) => ({ ...prev, cleaned: true }))}
+                    className={`px-3 py-1.5 rounded-md text-sm border ${
+                      returnAnswers.cleaned === true
+                        ? 'bg-green-600 text-white border-green-600'
+                        : 'bg-white text-gray-700 border-gray-300'
+                    }`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    onClick={() => setReturnAnswers((prev) => ({ ...prev, cleaned: false }))}
+                    className={`px-3 py-1.5 rounded-md text-sm border ${
+                      returnAnswers.cleaned === false
+                        ? 'bg-gray-700 text-white border-gray-700'
+                        : 'bg-white text-gray-700 border-gray-300'
+                    }`}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">Does it need further maintenance?</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setReturnAnswers((prev) => ({ ...prev, needsMaintenance: true }))}
+                    className={`px-3 py-1.5 rounded-md text-sm border ${
+                      returnAnswers.needsMaintenance === true
+                        ? 'bg-red-600 text-white border-red-600'
+                        : 'bg-white text-gray-700 border-gray-300'
+                    }`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    onClick={() => setReturnAnswers((prev) => ({ ...prev, needsMaintenance: false }))}
+                    className={`px-3 py-1.5 rounded-md text-sm border ${
+                      returnAnswers.needsMaintenance === false
+                        ? 'bg-gray-700 text-white border-gray-700'
+                        : 'bg-white text-gray-700 border-gray-300'
+                    }`}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+
+              {returnError && (
+                <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
+                  {returnError}
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 p-6 border-t bg-gray-50">
+              <button
+                onClick={() => {
+                  setShowReturnModal(false)
+                  setPendingReturn(null)
+                  setReturnError('')
+                }}
+                className="flex-1 px-4 py-2 rounded-md bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors"
+                disabled={returnSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!pendingReturn) return
+                  if (returnAnswers.cleaned === null || returnAnswers.needsMaintenance === null) {
+                    setReturnError('Please answer both questions before completing the return.')
+                    return
+                  }
+
+                  setReturnSubmitting(true)
+                  setReturnError('')
+
+                  try {
+                    await updateSession(pendingReturn.sessionId, {
+                      returned_at: new Date().toISOString(),
+                      returned_station: currentStation
+                    })
+
+                    await createBikeReturnCheck({
+                      session_id: pendingReturn.sessionId,
+                      asset_id: pendingReturn.assetId,
+                      cleaned: returnAnswers.cleaned,
+                      needs_maintenance: returnAnswers.needsMaintenance
+                    })
+
+                    await updateAssetState(pendingReturn.assetId, {
+                      in_use: false,
+                      current_session_id: null
+                    })
+
+                    await loadAssets()
+                    setShowReturnModal(false)
+                    setPendingReturn(null)
+                  } catch (error) {
+                    console.error('Error completing bike return:', error)
+                    setReturnError('Failed to save the return checklist. Please try again.')
+                  } finally {
+                    setReturnSubmitting(false)
+                  }
+                }}
+                className="flex-1 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                disabled={returnSubmitting}
+              >
+                {returnSubmitting ? 'Saving...' : 'Complete Return'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

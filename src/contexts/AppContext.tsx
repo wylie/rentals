@@ -9,10 +9,12 @@ interface AppContextType {
   isAuthenticated: boolean
   sessionTimeoutHours: number
   companyName: string
+  currentStation: string
   user: User | null
   loading: boolean
   setSessionTimeout: (hours: number) => void
   setCompanyName: (name: string) => void
+  setCurrentStation: (station: string) => void
   signInWithPin: (pin: string) => Promise<{ error?: any }>
   changePin: (currentPin: string, newPin: string) => Promise<{ error?: any }>
   logout: () => Promise<void>
@@ -21,6 +23,7 @@ interface AppContextType {
 // Storage keys
 const SESSION_TIMEOUT_KEY = 'rental_session_timeout'
 const COMPANY_NAME_KEY = 'rental_company_name'
+const STATION_KEY = 'rental_current_station'
 const CLOUD_SESSION_TIMEOUT_KEY = 'session_timeout_hours'
 const CLOUD_COMPANY_NAME_KEY = 'company_name'
 
@@ -31,6 +34,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [sessionTimeoutHours, setSessionTimeoutHours] = useState(4) // Default 4 hours
   const [companyName, setCompanyNameState] = useState('')
+  const [currentStation, setCurrentStationState] = useState('Main Location')
 
   const isAuthenticated = !!user
 
@@ -84,6 +88,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const savedCompanyName = localStorage.getItem(COMPANY_NAME_KEY)
       if (savedCompanyName) {
         setCompanyNameState(savedCompanyName)
+      }
+
+      // Load current station setting
+      const savedStation = localStorage.getItem(STATION_KEY)
+      if (savedStation) {
+        setCurrentStationState(savedStation)
       }
     }
 
@@ -167,6 +177,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  const setCurrentStation = (station: string) => {
+    setCurrentStationState(station)
+    localStorage.setItem(STATION_KEY, station)
+  }
+
   const signInWithPin = async (pin: string) => {
     if (!isSupabaseConfigured()) {
       return { error: new Error('Supabase is not configured') }
@@ -219,10 +234,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       isAuthenticated,
       sessionTimeoutHours,
       companyName,
+      currentStation,
       user,
       loading,
       setSessionTimeout,
       setCompanyName,
+      setCurrentStation,
       signInWithPin,
       changePin,
       logout

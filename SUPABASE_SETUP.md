@@ -15,6 +15,7 @@ This project has been updated to use Supabase for cloud database storage, which 
 3. Paste it into the SQL Editor and click **Run**
 4. Then run `supabase-subcategories.sql` to enable subcategory sync across devices
 5. Then run `supabase-app-settings.sql` to sync company name and session timeout across devices
+6. Then run `supabase-bike-return-checks.sql` to store Bike Park return checklists
 
 This will create all the necessary tables and security policies.
 

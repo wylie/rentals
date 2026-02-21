@@ -36,7 +36,16 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
   const [clearReportsChecked, setClearReportsChecked] = useState(false)
   const [tempSubcategories, setTempSubcategories] = useState<SubcategorySettings>({ bike: [], helmet: [] })
   const [fleetNumberInputs, setFleetNumberInputs] = useState<Record<string, string>>({})
-  const { sessionTimeoutHours, companyName, setSessionTimeout, setCompanyName, changePin, logout } = useApp()
+  const {
+    sessionTimeoutHours,
+    companyName,
+    currentStation,
+    setSessionTimeout,
+    setCompanyName,
+    setCurrentStation,
+    changePin,
+    logout
+  } = useApp()
 
   const inputKey = (type: AssetType, subcategoryId: string) => `${type}-${subcategoryId}`
 
@@ -445,6 +454,23 @@ export default function Navigation({ currentView, onViewChange, onClearReports }
                         <button onClick={() => setTempTimeout('168')} className="px-3 py-1.5 bg-gray-100 rounded text-sm text-gray-700 hover:bg-gray-200">1 week</button>
                       </div>
                     </div>
+                  </div>
+                  <div>
+                    <label htmlFor="currentStation" className="block text-sm font-medium text-gray-700 mb-2">
+                      Current Station
+                    </label>
+                    <select
+                      id="currentStation"
+                      value={currentStation}
+                      onChange={(e) => setCurrentStation(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="Main Location">Main Location</option>
+                      <option value="Bike Park">Bike Park</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Used to determine when to show the Bike Park return checklist
+                    </p>
                   </div>
                 </div>
               )}

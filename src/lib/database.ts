@@ -52,6 +52,16 @@ export interface AppSetting {
   user_id: string
 }
 
+export interface BikeReturnCheck {
+  id: number
+  session_id: number
+  asset_id: number
+  cleaned: boolean
+  needs_maintenance: boolean
+  created_at: string
+  user_id: string
+}
+
 export type AssetsWithState = Asset & {
   asset_state: AssetState[]
 }
@@ -149,6 +159,44 @@ export const setAppSetting = async (settingKey: string, settingValue: string): P
   if (error) {
     console.error(`Error saving app setting (${settingKey}):`, error)
     throw error
+  }
+}
+
+export const createBikeReturnCheck = async (data: {
+  session_id: number
+  asset_id: number
+  cleaned: boolean
+  needs_maintenance: boolean
+}): Promise<void> => {
+  const userId = await getCurrentUserId()
+
+  const { error } = await supabase
+    .from('bike_return_checks')
+    .insert({
+      ...data,
+      user_id: userId
+    })
+
+  if (error) {
+    console.error('Error creating bike return check:', error)
+    throw error
+  }
+}
+
+export const getBikeReturnChecks = async (): Promise<BikeReturnCheck[]> => {
+  try {
+    const userId = await getCurrentUserId()
+    const { data, error } = await supabase
+      .from('bike_return_checks')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching bike return checks:', error)
+    return []
   }
 }
 

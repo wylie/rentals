@@ -1,7 +1,14 @@
 'use client'
 
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
-import { clearSessions, getAssets, getSessions, type Asset, type Session } from '@/lib/database'
+import {
+  clearSessions,
+  getAssets,
+  getSessions,
+  getBikeReturnChecks,
+  type Asset,
+  type Session
+} from '@/lib/database'
 import { getAssetSubcategoryName, getSubcategorySettings } from '@/lib/subcategories'
 
 interface ReportData {
@@ -13,11 +20,21 @@ interface ReportData {
   weekSessions: number
 }
 
+interface BikeReturnRow {
+  id: number
+  assetLabel: string
+  cleaned: boolean
+  needsMaintenance: boolean
+  createdAt: string
+}
+
 const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) => {
   const [reportData, setReportData] = useState<ReportData[]>([])
   const [loading, setLoading] = useState(true)
   const [assetType, setAssetType] = useState<'bike' | 'helmet'>('bike')
   const [selectedSubcategory, setSelectedSubcategory] = useState('all')
+  const [reportView, setReportView] = useState<'usage' | 'bike-park'>('usage')
+  const [bikeReturnRows, setBikeReturnRows] = useState<BikeReturnRow[]>([])
 
   const loadReportData = async () => {
     try {
@@ -76,6 +93,18 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
       })
 
       setReportData(processedData)
+
+      const returnChecks = await getBikeReturnChecks()
+      const bikesById = new Map(activeAssets.map((asset) => [asset.id, asset.label]))
+      const returnRows: BikeReturnRow[] = returnChecks.map((check) => ({
+        id: check.id,
+        assetLabel: bikesById.get(check.asset_id) || `Bike ${check.asset_id}`,
+        cleaned: check.cleaned,
+        needsMaintenance: check.needs_maintenance,
+        createdAt: check.created_at
+      }))
+
+      setBikeReturnRows(returnRows)
     } catch (error) {
       console.error('Error loading report data:', error)
     } finally {
@@ -84,6 +113,31 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
   }
 
   const exportToCSV = () => {
+    if (reportView === 'bike-park') {
+      const headers = ['Bike', 'Returned At', 'Cleaned', 'Needs Maintenance']
+      const csvData = bikeReturnRows.map((row) => [
+        row.assetLabel,
+        new Date(row.createdAt).toLocaleString(),
+        row.cleaned ? 'Yes' : 'No',
+        row.needsMaintenance ? 'Yes' : 'No'
+      ])
+
+      const csvContent = [headers, ...csvData]
+        .map((row) => row.join(','))
+        .join('\n')
+
+      const blob = new Blob([csvContent], { type: 'text/csv' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `bike-park-returns-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      return
+    }
+
     const headers = [
       assetType === 'bike' ? 'Bike' : 'Helmet',
       'Subcategory',
@@ -197,33 +251,89 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
   const totalWeekSessions = filteredReportData.reduce((sum, item) => sum + item.weekSessions, 0)
   const totalWeekDuration = filteredReportData.reduce((sum, item) => sum + item.weekDuration, 0)
 
+  const bikeReturnSummary = bikeReturnRows.reduce(
+    (acc, row) => ({
+      total: acc.total + 1,
+      cleaned: acc.cleaned + (row.cleaned ? 1 : 0),
+      needsMaintenance: acc.needsMaintenance + (row.needsMaintenance ? 1 : 0)
+    }),
+    { total: 0, cleaned: 0, needsMaintenance: 0 }
+  )
+
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">Today Sessions</h3>
-          <p className="text-2xl font-bold text-gray-900">{totalTodaySessions}</p>
+      {reportView === 'usage' ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-sm font-medium text-gray-500">Today Sessions</h3>
+            <p className="text-2xl font-bold text-gray-900">{totalTodaySessions}</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-sm font-medium text-gray-500">Today Duration</h3>
+            <p className="text-2xl font-bold text-gray-900">{formatDuration(totalTodayDuration)}</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-sm font-medium text-gray-500">Week Sessions</h3>
+            <p className="text-2xl font-bold text-gray-900">{totalWeekSessions}</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-sm font-medium text-gray-500">Week Duration</h3>
+            <p className="text-2xl font-bold text-gray-900">{formatDuration(totalWeekDuration)}</p>
+          </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">Today Duration</h3>
-          <p className="text-2xl font-bold text-gray-900">{formatDuration(totalTodayDuration)}</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-sm font-medium text-gray-500">Total Returns</h3>
+            <p className="text-2xl font-bold text-gray-900">{bikeReturnSummary.total}</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-sm font-medium text-gray-500">Cleaned</h3>
+            <p className="text-2xl font-bold text-gray-900">{bikeReturnSummary.cleaned}</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-sm font-medium text-gray-500">Needs Maintenance</h3>
+            <p className="text-2xl font-bold text-gray-900">{bikeReturnSummary.needsMaintenance}</p>
+          </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">Week Sessions</h3>
-          <p className="text-2xl font-bold text-gray-900">{totalWeekSessions}</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-gray-500">Week Duration</h3>
-          <p className="text-2xl font-bold text-gray-900">{formatDuration(totalWeekDuration)}</p>
-        </div>
-      </div>
+      )}
 
       {/* Header and Export */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center space-x-2 flex-wrap gap-y-2">
-          <h2 className="text-2xl font-bold text-gray-800">Usage Report</h2>
           <div className="inline-flex rounded-md shadow-sm" role="group">
+            <button
+              onClick={() => setReportView('usage')}
+              className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-l-md transition-colors ${
+                reportView === 'usage'
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg">assessment</span>
+              <span>Usage</span>
+            </button>
+            <button
+              onClick={() => setReportView('bike-park')}
+              className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-r-md transition-colors ${
+                reportView === 'bike-park'
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <span className="material-symbols-outlined text-lg">fact_check</span>
+              <span>Bike Park</span>
+            </button>
+          </div>
+
+          {reportView === 'usage' && (
+            <h2 className="text-2xl font-bold text-gray-800">Usage Report</h2>
+          )}
+          {reportView === 'bike-park' && (
+            <h2 className="text-2xl font-bold text-gray-800">Bike Park Returns</h2>
+          )}
+          {reportView === 'usage' && (
+            <div className="inline-flex rounded-md shadow-sm" role="group">
             <button
               onClick={() => setAssetType('bike')}
               className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-l-md transition-colors ${
@@ -247,7 +357,9 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
               <span>Helmets</span>
             </button>
           </div>
-          <div className="flex items-center space-x-2 ml-0 sm:ml-2">
+          )}
+          {reportView === 'usage' && (
+            <div className="flex items-center space-x-2 ml-0 sm:ml-2">
             <label htmlFor="subcategoryFilter" className="text-sm font-medium text-gray-700">Subcategory</label>
             <select
               id="subcategoryFilter"
@@ -263,6 +375,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
               ))}
             </select>
           </div>
+          )}
         </div>
         <div>
           <button
@@ -275,76 +388,118 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
         </div>
       </div>
 
-      {/* Data Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {assetType === 'bike' ? 'Bike' : 'Helmet'}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Subcategory
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Today Sessions
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Today Duration
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Today Avg
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Week Sessions
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Week Duration
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Week Avg
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredReportData.map((data) => {
-                const todayAvg = data.todaySessions > 0 ? Math.round(data.todayDuration / data.todaySessions) : 0
-                const weekAvg = data.weekSessions > 0 ? Math.round(data.weekDuration / data.weekSessions) : 0
-                
-                return (
-                  <tr key={data.asset.id} className="hover:bg-gray-50">
+      {reportView === 'usage' ? (
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {assetType === 'bike' ? 'Bike' : 'Helmet'}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Subcategory
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Today Sessions
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Today Duration
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Today Avg
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Week Sessions
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Week Duration
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Week Avg
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredReportData.map((data) => {
+                  const todayAvg = data.todaySessions > 0 ? Math.round(data.todayDuration / data.todaySessions) : 0
+                  const weekAvg = data.weekSessions > 0 ? Math.round(data.weekDuration / data.weekSessions) : 0
+                  
+                  return (
+                    <tr key={data.asset.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {data.asset.label}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {data.subcategoryName}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                        {data.todaySessions}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                        {formatDuration(data.todayDuration)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                        {formatDuration(todayAvg)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                        {data.weekSessions}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                        {formatDuration(data.weekDuration)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                        {formatDuration(weekAvg)}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Bike
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Returned At
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Cleaned
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Needs Maintenance
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {bikeReturnRows.map((row) => (
+                  <tr key={row.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {data.asset.label}
+                      {row.assetLabel}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {data.subcategoryName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                      {data.todaySessions}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(row.createdAt).toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                      {formatDuration(data.todayDuration)}
+                      {row.cleaned ? 'Yes' : 'No'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                      {formatDuration(todayAvg)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                      {data.weekSessions}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                      {formatDuration(data.weekDuration)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                      {formatDuration(weekAvg)}
+                      {row.needsMaintenance ? 'Yes' : 'No'}
                     </td>
                   </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 })

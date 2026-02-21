@@ -38,8 +38,9 @@ This project has been upgraded from local storage to cloud-based data storage:
 3. In the SQL Editor, run the contents of `supabase-schema.sql`
 4. Run `supabase-subcategories.sql` to sync subcategories across devices
 5. Run `supabase-app-settings.sql` to sync app settings (company name/session timeout) across devices
-6. Get your project URL and API key from Settings → API
-7. Update `.env.local` with your credentials:
+6. Run `supabase-bike-return-checks.sql` to store Bike Park return checklists
+7. Get your project URL and API key from Settings → API
+8. Update `.env.local` with your credentials:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your_actual_supabase_project_url
@@ -107,6 +108,7 @@ All data is secured with Row Level Security (RLS) - users can only access their 
 - `/supabase-schema.sql` - Database setup script
 - `/supabase-subcategories.sql` - Subcategory sync schema script
 - `/supabase-app-settings.sql` - App settings sync schema script
+- `/supabase-bike-return-checks.sql` - Bike Park return checklist schema script
 - `/SUPABASE_SETUP.md` - Detailed setup instructions
 
 ## 🛠️ Development
