@@ -180,10 +180,25 @@ export default function LiveInventory() {
   if (loading) {
     const timeElapsed = Date.now() - loadStartTime
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        {timeElapsed > 10000 ? (
-          <div className="text-center space-y-3">
-            <p className="text-amber-600">Loading is taking longer than expected...</p>
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-2xl font-bold mb-2 text-gray-800">Bikes</h2>
+          {timeElapsed > 10000 ? (
+            <div className="text-sm text-amber-600">Loading bikes is taking longer than expected...</div>
+          ) : (
+            <div className="text-sm text-gray-500">Loading bikes...</div>
+          )}
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold mb-2 text-gray-800">Helmets</h2>
+          {timeElapsed > 10000 ? (
+            <div className="text-sm text-amber-600">Loading helmets is taking longer than expected...</div>
+          ) : (
+            <div className="text-sm text-gray-500">Loading helmets...</div>
+          )}
+        </div>
+        {timeElapsed > 10000 && (
+          <div className="text-left space-y-3">
             <button
               onClick={() => {
                 console.log('🔄 Force refresh requested')
@@ -197,8 +212,6 @@ export default function LiveInventory() {
               If this keeps happening, check your browser console (F12) for errors
             </p>
           </div>
-        ) : (
-          <p className="text-lg text-gray-600">Loading inventory...</p>
         )}
       </div>
     )
