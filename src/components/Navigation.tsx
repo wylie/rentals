@@ -328,7 +328,7 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                <span className="material-symbols-outlined text-lg">bike_scooter</span>
+                <span className="material-symbols-outlined text-lg">pedal_bike</span>
                 <span>Bike Park</span>
               </button>
             </div>
