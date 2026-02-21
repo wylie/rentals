@@ -206,28 +206,37 @@ export default function LiveInventory() {
     }
   }, [])
 
+  const SkeletonButton = () => (
+    <div className="p-3 rounded-lg min-h-[80px] flex flex-col justify-center items-center space-y-1 bg-gray-200 animate-pulse"></div>
+  )
+
+  const SkeletonSection = ({ typeLabel }: { typeLabel: string }) => (
+    <div>
+      <h2 className="text-2xl font-bold mb-4 text-gray-800">{typeLabel}</h2>
+      <div className="space-y-4">
+        {[0, 1, 2].map((sectionIdx) => (
+          <div key={sectionIdx} className="space-y-2">
+            <div className="h-5 bg-gray-200 rounded w-32 animate-pulse"></div>
+            <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((idx) => (
+                <SkeletonButton key={idx} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
   if (loading) {
     const timeElapsed = Date.now() - loadStartTime
     return (
       <div className="space-y-8">
-        <div>
-          <h2 className="text-2xl font-bold mb-2 text-gray-800">Bikes</h2>
-          {timeElapsed > 10000 ? (
-            <div className="text-sm text-amber-600">Loading bikes is taking longer than expected...</div>
-          ) : (
-            <div className="text-sm text-gray-500">Loading bikes...</div>
-          )}
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold mb-2 text-gray-800">Helmets</h2>
-          {timeElapsed > 10000 ? (
-            <div className="text-sm text-amber-600">Loading helmets is taking longer than expected...</div>
-          ) : (
-            <div className="text-sm text-gray-500">Loading helmets...</div>
-          )}
-        </div>
+        <SkeletonSection typeLabel="Bikes" />
+        <SkeletonSection typeLabel="Helmets" />
         {timeElapsed > 10000 && (
           <div className="text-left space-y-3">
+            <div className="text-sm text-amber-600">Loading is taking longer than expected...</div>
             <button
               onClick={() => {
                 console.log('🔄 Force refresh requested')
