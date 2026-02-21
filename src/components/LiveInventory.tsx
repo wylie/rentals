@@ -382,10 +382,13 @@ export default function LiveInventory() {
                   setReturnError('')
 
                   try {
+                    console.log('📋 Saving bike return with answers:', returnAnswers)
+                    
                     await updateSession(pendingReturn.sessionId, {
                       returned_at: new Date().toISOString(),
                       returned_station: currentStation
                     })
+                    console.log('✅ Session updated')
 
                     await createBikeReturnCheck({
                       session_id: pendingReturn.sessionId,
@@ -393,18 +396,21 @@ export default function LiveInventory() {
                       cleaned: returnAnswers.cleaned,
                       needs_maintenance: returnAnswers.needsMaintenance
                     })
+                    console.log('✅ Bike return check created')
 
                     await updateAssetState(pendingReturn.assetId, {
                       in_use: false,
                       current_session_id: null
                     })
+                    console.log('✅ Asset state updated')
 
                     await loadAssets()
                     setShowReturnModal(false)
                     setPendingReturn(null)
-                  } catch (error) {
-                    console.error('Error completing bike return:', error)
-                    setReturnError('Failed to save the return checklist. Please try again.')
+                  } catch (error: any) {
+                    console.error('❌ Error completing bike return:', error)
+                    const errorMsg = error?.message || error?.details || JSON.stringify(error) || 'Unknown error'
+                    setReturnError(`Failed to save: ${errorMsg}`)
                   } finally {
                     setReturnSubmitting(false)
                   }
