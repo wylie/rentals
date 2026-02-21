@@ -287,9 +287,11 @@ export default function LiveInventory() {
   }
 
   return (
-    <div className="space-y-8">
-      {renderGroupedAssets(bikes, 'Bikes')}
-      {renderGroupedAssets(helmets, 'Helmets')}
+    <>
+      <div className="space-y-8">
+        {renderGroupedAssets(bikes, 'Bikes')}
+        {renderGroupedAssets(helmets, 'Helmets')}
+      </div>
 
       {showReturnModal && pendingReturn && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -362,7 +364,7 @@ export default function LiveInventory() {
                     value={returnAnswers.maintenanceNotes}
                     onChange={(e) => setReturnAnswers((prev) => ({ ...prev, maintenanceNotes: e.target.value }))}
                     placeholder="e.g., Chain needs cleaning, brake pads need replacement, tire pressure low..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 placeholder-gray-500 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     rows={3}
                   />
                 </div>
@@ -444,6 +446,6 @@ export default function LiveInventory() {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
