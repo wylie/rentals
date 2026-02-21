@@ -223,13 +223,25 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
     }
   }, [])
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-lg text-gray-600">Loading reports...</div>
-      </div>
-    )
-  }
+  const SkeletonCard = () => (
+    <div className="bg-white p-4 rounded-lg shadow animate-pulse">
+      <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+      <div className="h-8 bg-gray-200 rounded w-16"></div>
+    </div>
+  )
+
+  const SkeletonTableRow = () => (
+    <tr>
+      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+    </tr>
+  )
 
   const typeReportData = reportData.filter(item => item.asset.type === assetType)
   const availableSubcategories = [...new Set(typeReportData.map((item) => item.subcategoryName))].sort((a, b) => {
@@ -257,39 +269,61 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
 
   return (
     <div className="space-y-6">
+      {/* Stat Cards */}
       {reportView === 'usage' ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Today Sessions</h3>
-            <p className="text-2xl font-bold text-gray-900">{totalTodaySessions}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Today Duration</h3>
-            <p className="text-2xl font-bold text-gray-900">{formatDuration(totalTodayDuration)}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Week Sessions</h3>
-            <p className="text-2xl font-bold text-gray-900">{totalWeekSessions}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Week Duration</h3>
-            <p className="text-2xl font-bold text-gray-900">{formatDuration(totalWeekDuration)}</p>
-          </div>
+          {loading ? (
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          ) : (
+            <>
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h3 className="text-sm font-medium text-gray-500">Today Sessions</h3>
+                <p className="text-2xl font-bold text-gray-900">{totalTodaySessions}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h3 className="text-sm font-medium text-gray-500">Today Duration</h3>
+                <p className="text-2xl font-bold text-gray-900">{formatDuration(totalTodayDuration)}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h3 className="text-sm font-medium text-gray-500">Week Sessions</h3>
+                <p className="text-2xl font-bold text-gray-900">{totalWeekSessions}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h3 className="text-sm font-medium text-gray-500">Week Duration</h3>
+                <p className="text-2xl font-bold text-gray-900">{formatDuration(totalWeekDuration)}</p>
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Total Returns</h3>
-            <p className="text-2xl font-bold text-gray-900">{bikeReturnSummary.total}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Cleaned</h3>
-            <p className="text-2xl font-bold text-gray-900">{bikeReturnSummary.cleaned}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Needs Maintenance</h3>
-            <p className="text-2xl font-bold text-gray-900">{bikeReturnSummary.needsMaintenance}</p>
-          </div>
+          {loading ? (
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          ) : (
+            <>
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h3 className="text-sm font-medium text-gray-500">Total Returns</h3>
+                <p className="text-2xl font-bold text-gray-900">{bikeReturnSummary.total}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h3 className="text-sm font-medium text-gray-500">Cleaned</h3>
+                <p className="text-2xl font-bold text-gray-900">{bikeReturnSummary.cleaned}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h3 className="text-sm font-medium text-gray-500">Needs Maintenance</h3>
+                <p className="text-2xl font-bold text-gray-900">{bikeReturnSummary.needsMaintenance}</p>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -390,39 +424,49 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredReportData.map((data) => {
-                  const todayAvg = data.todaySessions > 0 ? Math.round(data.todayDuration / data.todaySessions) : 0
-                  const weekAvg = data.weekSessions > 0 ? Math.round(data.weekDuration / data.weekSessions) : 0
-                  
-                  return (
-                    <tr key={data.asset.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {data.asset.label}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {data.subcategoryName}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                        {data.todaySessions}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                        {formatDuration(data.todayDuration)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                        {formatDuration(todayAvg)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                        {data.weekSessions}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                        {formatDuration(data.weekDuration)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                        {formatDuration(weekAvg)}
-                      </td>
-                    </tr>
-                  )
-                })}
+                {loading ? (
+                  <>
+                    <SkeletonTableRow />
+                    <SkeletonTableRow />
+                    <SkeletonTableRow />
+                    <SkeletonTableRow />
+                    <SkeletonTableRow />
+                  </>
+                ) : (
+                  filteredReportData.map((data) => {
+                    const todayAvg = data.todaySessions > 0 ? Math.round(data.todayDuration / data.todaySessions) : 0
+                    const weekAvg = data.weekSessions > 0 ? Math.round(data.weekDuration / data.weekSessions) : 0
+                    
+                    return (
+                      <tr key={data.asset.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {data.asset.label}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {data.subcategoryName}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                          {data.todaySessions}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                          {formatDuration(data.todayDuration)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                          {formatDuration(todayAvg)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                          {data.weekSessions}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                          {formatDuration(data.weekDuration)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                          {formatDuration(weekAvg)}
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -448,22 +492,45 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {bikeReturnRows.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {row.assetLabel}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(row.createdAt).toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                      {row.cleaned ? 'Yes' : 'No'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                      {row.needsMaintenance ? 'Yes' : 'No'}
-                    </td>
-                  </tr>
-                ))}
+                {loading ? (
+                  <>
+                    <tr>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded animate-pulse"></div></td>
+                    </tr>
+                  </>
+                ) : (
+                  bikeReturnRows.map((row) => (
+                    <tr key={row.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {row.assetLabel}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(row.createdAt).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                        {row.cleaned ? 'Yes' : 'No'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                        {row.needsMaintenance ? 'Yes' : 'No'}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
