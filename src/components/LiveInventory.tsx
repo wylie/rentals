@@ -217,7 +217,7 @@ export default function LiveInventory() {
         {[0, 1, 2].map((sectionIdx) => (
           <div key={sectionIdx} className="space-y-2">
             <div className="h-5 bg-gray-200 rounded w-32 animate-pulse"></div>
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(80px,1fr))] gap-3">
+            <div className="grid grid-cols-[repeat(auto-fill,110px)] gap-3">
               {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((idx) => (
                 <SkeletonButton key={idx} />
               ))}
@@ -280,7 +280,7 @@ export default function LiveInventory() {
           {orderedGroupNames.map((groupName) => (
             <div key={groupName} className="space-y-2">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-600">{groupName}</h3>
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(80px,1fr))] gap-3">
+              <div className="grid grid-cols-[repeat(auto-fill,110px)] gap-3">
                 {groups[groupName].map((asset) => (
                   <AssetButton
                     key={asset.id}
