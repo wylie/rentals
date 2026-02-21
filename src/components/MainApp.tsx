@@ -11,6 +11,7 @@ import { isSupabaseConfigured } from '@/lib/supabase'
 
 export default function MainApp() {
   const [currentArea, setCurrentArea] = useState<'frontdesk' | 'bikepark'>('frontdesk')
+  const [bikeParkView, setBikeParkView] = useState<'inventory' | 'reports'>('inventory')
   const { isAuthenticated, loading } = useApp()
   const reportsRef = useRef<{ clearReports: () => Promise<void> }>(null)
 
@@ -44,10 +45,38 @@ export default function MainApp() {
       />
       
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {currentArea === 'bikepark' && (
+          <div className="mb-4">
+            <div className="inline-flex rounded-md shadow-sm" role="group">
+              <button
+                onClick={() => setBikeParkView('inventory')}
+                className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-l-md transition-colors ${
+                  bikeParkView === 'inventory'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <span className="material-symbols-outlined text-lg">inventory_2</span>
+                <span>Inventory</span>
+              </button>
+              <button
+                onClick={() => setBikeParkView('reports')}
+                className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-r-md transition-colors ${
+                  bikeParkView === 'reports'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <span className="material-symbols-outlined text-lg">assessment</span>
+                <span>Reports</span>
+              </button>
+            </div>
+          </div>
+        )}
         {currentArea === 'frontdesk' ? (
           <LiveInventory />
         ) : (
-          <Reports ref={reportsRef} />
+          bikeParkView === 'inventory' ? <LiveInventory /> : <Reports ref={reportsRef} />
         )}
       </main>
     </div>
