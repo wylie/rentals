@@ -44,7 +44,7 @@ function AssetButton({ asset, onToggle, isLoading, subcategorySettings }: AssetB
         {asset.type === 'bike' ? 'pedal_bike' : 'sports_motorsports'}
       </span>
       <div className="font-semibold text-xs">{displayLabel}</div>
-      <div className={`flex items-center space-x-1 text-xs px-2 py-0.5 rounded ${
+      <div className={`flex items-center space-x-1 text-xs px-2 py-0.5 rounded mx-1 ${
         isInUse ? 'bg-red-200 text-red-700' : 'bg-green-200 text-green-700'
       }`}>
         <span className="material-symbols-outlined text-sm">
