@@ -45,6 +45,7 @@ This project has been upgraded from local storage to cloud-based data storage:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your_actual_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_actual_supabase_anon_key
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-Q8WQS2N1YE
 ```
 
 ### 2. Install and Run
