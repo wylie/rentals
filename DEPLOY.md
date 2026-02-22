@@ -52,7 +52,7 @@ git push -u origin main
 After 2-3 minutes, your site will be live at:
 
 ```
-https://YOURUSERNAME.github.io/rentals/
+https://fleetrental.app/
 ```
 
 ## 📱 How to Use

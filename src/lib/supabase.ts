@@ -16,8 +16,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-    redirectTo: typeof window !== 'undefined' ? 
-      `${window.location.origin}${process.env.NODE_ENV === 'production' ? '/rentals' : ''}/` : undefined,
+    redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/` : undefined,
   },
 })
 
