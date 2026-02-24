@@ -196,7 +196,7 @@ export default function LiveInventory() {
             asset_id: asset.id,
             asset_label: assetLabel,
             station: currentStation,
-            session_id: newSession.id
+            rental_session_id: newSession.id
           })
         }
       }
