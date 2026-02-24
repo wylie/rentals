@@ -9,6 +9,7 @@ import {
   type Asset
 } from '@/lib/database'
 import { getAssetSubcategoryName, getSubcategorySettings, getDisplayLabel } from '@/lib/subcategories'
+import { event } from '@/lib/ga'
 
 interface ReportData {
   asset: Asset
@@ -116,6 +117,13 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
   }
 
   const exportToCSV = () => {
+    event('button_clicked', {
+      button_name: 'export_csv',
+      report_view: reportView,
+      asset_type: selectedAssetType,
+      subcategory: selectedSubcategory
+    })
+
     if (reportView === 'maintenance') {
       const headers = ['Bike', 'Returned At', 'Cleaned', 'Needs Maintenance', 'Maintenance Notes']
       const csvData = bikeReturnRows.map((row) => [
@@ -342,7 +350,12 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
         <div className="flex items-center space-x-2 flex-wrap gap-y-2">
           <div className="inline-flex rounded-md shadow-sm" role="group">
             <button
-              onClick={() => setReportView('usage')}
+              onClick={() => {
+                setReportView('usage')
+                event('button_clicked', {
+                  button_name: 'report_view_usage'
+                })
+              }}
               className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-l-md transition-colors ${
                 reportView === 'usage'
                   ? 'bg-blue-600 text-white border-blue-600'
@@ -353,7 +366,12 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
               <span>Usage</span>
             </button>
             <button
-              onClick={() => setReportView('maintenance')}
+              onClick={() => {
+                setReportView('maintenance')
+                event('button_clicked', {
+                  button_name: 'report_view_maintenance'
+                })
+              }}
               className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-r-md transition-colors ${
                 reportView === 'maintenance'
                   ? 'bg-blue-600 text-white border-blue-600'
@@ -375,7 +393,12 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
             <div className="flex items-center flex-wrap gap-2">
               <div className="inline-flex rounded-md shadow-sm" role="group">
                 <button
-                  onClick={() => setSelectedAssetType('bike')}
+                  onClick={() => {
+                    setSelectedAssetType('bike')
+                    event('button_clicked', {
+                      button_name: 'report_asset_type_bike'
+                    })
+                  }}
                   className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-l-md transition-colors ${
                     selectedAssetType === 'bike'
                       ? 'bg-green-600 text-white border-green-600'
@@ -386,7 +409,12 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
                   <span>Bikes</span>
                 </button>
                 <button
-                  onClick={() => setSelectedAssetType('helmet')}
+                  onClick={() => {
+                    setSelectedAssetType('helmet')
+                    event('button_clicked', {
+                      button_name: 'report_asset_type_helmet'
+                    })
+                  }}
                   className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-r-md transition-colors ${
                     selectedAssetType === 'helmet'
                       ? 'bg-blue-600 text-white border-blue-600'
@@ -401,7 +429,13 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
               <select
                 id="subcategoryFilter"
                 value={selectedSubcategory}
-                onChange={(e) => setSelectedSubcategory(e.target.value)}
+                onChange={(e) => {
+                  setSelectedSubcategory(e.target.value)
+                  event('report_subcategory_filter_changed', {
+                    asset_type: selectedAssetType,
+                    subcategory: e.target.value
+                  })
+                }}
                 className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All</option>

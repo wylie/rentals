@@ -8,6 +8,7 @@ import Reports from './Reports'
 import AuthScreen from './AuthScreen'
 import SupabaseConfigNotice from './SupabaseConfigNotice'
 import { isSupabaseConfigured } from '@/lib/supabase'
+import { event } from '@/lib/ga'
 
 export default function MainApp() {
   const [currentArea, setCurrentArea] = useState<'frontdesk' | 'bikepark'>('frontdesk')
@@ -31,10 +32,16 @@ export default function MainApp() {
   // Save tab preferences to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('selectedArea', currentArea)
+    event('section_viewed', {
+      section: currentArea,
+    })
   }, [currentArea])
 
   useEffect(() => {
     localStorage.setItem('selectedBikeParkView', bikeParkView)
+    event('bikepark_view_changed', {
+      view: bikeParkView,
+    })
   }, [bikeParkView])
 
   // Show configuration notice if Supabase is not configured
@@ -71,7 +78,13 @@ export default function MainApp() {
           <div className="mb-4">
             <div className="inline-flex rounded-md shadow-sm" role="group">
               <button
-                onClick={() => setBikeParkView('inventory')}
+                onClick={() => {
+                  event('button_clicked', {
+                    button_name: 'bikepark_inventory_tab',
+                    section: 'bikepark'
+                  })
+                  setBikeParkView('inventory')
+                }}
                 className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-l-md transition-colors ${
                   bikeParkView === 'inventory'
                     ? 'bg-blue-600 text-white border-blue-600'
@@ -82,7 +95,13 @@ export default function MainApp() {
                 <span>Inventory</span>
               </button>
               <button
-                onClick={() => setBikeParkView('reports')}
+                onClick={() => {
+                  event('button_clicked', {
+                    button_name: 'bikepark_reports_tab',
+                    section: 'bikepark'
+                  })
+                  setBikeParkView('reports')
+                }}
                 className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-r-md transition-colors ${
                   bikeParkView === 'reports'
                     ? 'bg-blue-600 text-white border-blue-600'

@@ -10,6 +10,7 @@ import {
   getSubcategorySettings,
   saveSubcategorySettings
 } from '@/lib/subcategories'
+import { event } from '@/lib/ga'
 
 interface NavigationProps {
   currentArea: 'frontdesk' | 'bikepark'
@@ -127,6 +128,11 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
   }
 
   const handleOpenSettings = async () => {
+    event('button_clicked', {
+      button_name: 'open_settings',
+      section: currentArea,
+      station: currentStation
+    })
     setTempTimeout(sessionTimeoutHours.toString())
     setTempCompanyName(companyName)
     
@@ -157,6 +163,11 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
   }
 
   const handleSaveSettings = async () => {
+    event('button_clicked', {
+      button_name: 'save_settings',
+      settings_tab: activeTab,
+      section: currentArea
+    })
     setIsUpdatingFleet(true)
     setPinError('')
     setPinMessage('')
@@ -188,10 +199,17 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
         if (currentPin.trim() && newPin.trim()) {
           const { error } = await changePin(currentPin.trim(), newPin.trim())
           if (error) {
+            event('settings_save_failed', {
+              reason: 'pin_update_failed',
+              settings_tab: activeTab
+            })
             setPinError(error.message || 'Failed to update PIN')
             setIsUpdatingFleet(false)
             return
           }
+          event('pin_changed', {
+            section: currentArea
+          })
           setPinMessage('PIN updated successfully')
           setCurrentPin('')
           setNewPin('')
@@ -202,9 +220,16 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
       // Clear reports if checkbox is checked
       if (clearReportsChecked) {
         const confirmed = confirm('This will permanently delete all usage history. Continue?')
+        event('reports_clear_confirmation', {
+          confirmed,
+          from_settings: true
+        })
         if (confirmed && onClearReports) {
           await onClearReports()
           setClearReportsChecked(false)
+          event('reports_cleared', {
+            source: 'settings'
+          })
         } else {
           setIsUpdatingFleet(false)
           return
@@ -219,6 +244,12 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
       
       if (newBikeCount !== fleetCounts.bikes || newHelmetCount !== fleetCounts.helmets) {
         fleetChanged = true
+        event('fleet_update_started', {
+          bikes_before: fleetCounts.bikes,
+          bikes_after: newBikeCount,
+          helmets_before: fleetCounts.helmets,
+          helmets_after: newHelmetCount
+        })
         console.log('🔄 Resetting fleet to exact counts...')
         
         // Add timeout to prevent hanging
@@ -230,6 +261,11 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
         try {
           await Promise.race([resetPromise, timeoutPromise])
           console.log('✅ Fleet reset completed successfully')
+          event('fleet_updated', {
+            bikes_after: newBikeCount,
+            helmets_after: newHelmetCount,
+            method: 'reset'
+          })
         } catch (resetError) {
           console.error('❌ Fleet reset failed:', resetError)
           
@@ -252,8 +288,18 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
           }
           
           console.log('✅ Fallback fleet update completed')
+          event('fleet_updated', {
+            bikes_after: newBikeCount,
+            helmets_after: newHelmetCount,
+            method: 'fallback'
+          })
         }
       }
+
+      event('settings_saved', {
+        settings_tab: activeTab,
+        fleet_changed: fleetChanged
+      })
       
       setShowSettings(false)
       
@@ -268,6 +314,10 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
       }
       
     } catch (error: any) {
+      event('settings_save_failed', {
+        reason: 'unexpected_error',
+        settings_tab: activeTab
+      })
       console.error('Error saving settings:', error)
       alert(`Error updating settings: ${error.message}. Please try again.`)
       setIsUpdatingFleet(false) // Make sure to clear loading state
@@ -275,9 +325,27 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
   }
 
   const handleLogout = () => {
-    if (confirm('Are you sure you want to log out?')) {
+    event('button_clicked', {
+      button_name: 'logout_now',
+      section: currentArea
+    })
+    const confirmed = confirm('Are you sure you want to log out?')
+    event('logout_confirmation', {
+      confirmed
+    })
+    if (confirmed) {
       logout()
+      event('logged_out', {
+        source: 'settings'
+      })
     }
+  }
+
+  const handleSettingsTabChange = (tab: SettingsTab) => {
+    setActiveTab(tab)
+    event('settings_tab_opened', {
+      tab,
+    })
   }
 
   return (
@@ -307,6 +375,11 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
                 onClick={() => {
                   setCurrentStation('Main Location')
                   onAreaChange('frontdesk')
+                  event('button_clicked', {
+                    button_name: 'nav_front_desk',
+                    section: 'frontdesk',
+                    station: 'Main Location'
+                  })
                 }}
                 className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   currentArea === 'frontdesk'
@@ -321,6 +394,11 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
                 onClick={() => {
                   setCurrentStation('Bike Park')
                   onAreaChange('bikepark')
+                  event('button_clicked', {
+                    button_name: 'nav_bike_park',
+                    section: 'bikepark',
+                    station: 'Bike Park'
+                  })
                 }}
                 className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   currentArea === 'bikepark'
@@ -348,7 +426,7 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
             <div className="border-b bg-gray-50 overflow-x-auto">
               <div className="flex min-w-max">
                 <button
-                  onClick={() => setActiveTab('session')}
+                  onClick={() => handleSettingsTabChange('session')}
                   className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === 'session'
                       ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
@@ -359,7 +437,7 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
                   <span>Session</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('fleet')}
+                  onClick={() => handleSettingsTabChange('fleet')}
                   className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === 'fleet'
                       ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
@@ -370,7 +448,7 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
                   <span>Fleet</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('subcategories')}
+                  onClick={() => handleSettingsTabChange('subcategories')}
                   className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === 'subcategories'
                       ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
@@ -381,7 +459,7 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
                   <span>Subcategories</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('pin')}
+                  onClick={() => handleSettingsTabChange('pin')}
                   className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === 'pin'
                       ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
@@ -392,7 +470,7 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
                   <span>Access PIN</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('company')}
+                  onClick={() => handleSettingsTabChange('company')}
                   className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === 'company'
                       ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
@@ -403,7 +481,7 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
                   <span>Company</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('reports')}
+                  onClick={() => handleSettingsTabChange('reports')}
                   className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === 'reports'
                       ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
@@ -414,7 +492,7 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
                   <span>Reports</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('logout')}
+                  onClick={() => handleSettingsTabChange('logout')}
                   className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === 'logout'
                       ? 'border-b-2 border-red-600 text-red-600 bg-white'
@@ -873,6 +951,10 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
                 </button>
                 <button
                   onClick={() => {
+                    event('button_clicked', {
+                      button_name: 'cancel_settings',
+                      settings_tab: activeTab
+                    })
                     setShowSettings(false)
                     // Reset states when canceling
                     setPinError('')

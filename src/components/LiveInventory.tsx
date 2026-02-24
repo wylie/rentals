@@ -12,6 +12,7 @@ import {
 } from '@/lib/database'
 import { getAssetSubcategoryName, getSubcategorySettings, getDisplayLabel, type SubcategorySettings } from '@/lib/subcategories'
 import { useApp } from '@/contexts/AppContext'
+import { event } from '@/lib/ga'
 
 interface AssetButtonProps {
   asset: AssetsWithState
@@ -118,6 +119,17 @@ export default function LiveInventory() {
   // Toggle asset status
   const toggleAssetStatus = async (asset: AssetsWithState, currentlyInUse: boolean) => {
     setToggleLoading(asset.id)
+    const assetLabel = getDisplayLabel(asset, subcategorySettings)
+    const action = currentlyInUse ? 'return' : 'checkout'
+
+    event('button_clicked', {
+      button_name: 'asset_toggle',
+      asset_type: asset.type,
+      asset_id: asset.id,
+      asset_label: assetLabel,
+      action,
+      station: currentStation
+    })
     
     try {
       if (currentlyInUse) {
@@ -126,9 +138,14 @@ export default function LiveInventory() {
         const currentState = states.find(state => state.asset_id === asset.id)
 
         if (currentState?.current_session_id && asset.type === 'bike' && currentStation === 'Bike Park') {
+          event('bike_return_checklist_opened', {
+            asset_id: asset.id,
+            asset_label: assetLabel,
+            station: currentStation
+          })
           setPendingReturn({
             assetId: asset.id,
-            assetLabel: getDisplayLabel(asset, subcategorySettings),
+            assetLabel,
             sessionId: currentState.current_session_id
           })
           setReturnAnswers({ cleaned: null, needsMaintenance: null, maintenanceNotes: '' })
@@ -150,6 +167,13 @@ export default function LiveInventory() {
           current_session_id: null
         })
 
+        event('asset_returned', {
+          asset_type: asset.type,
+          asset_id: asset.id,
+          asset_label: assetLabel,
+          station: currentStation
+        })
+
       } else {
         // Asset is being checked out
         // First create a new session
@@ -166,6 +190,14 @@ export default function LiveInventory() {
             in_use: true,
             current_session_id: newSession.id
           })
+
+          event('asset_checked_out', {
+            asset_type: asset.type,
+            asset_id: asset.id,
+            asset_label: assetLabel,
+            station: currentStation,
+            session_id: newSession.id
+          })
         }
       }
 
@@ -173,6 +205,12 @@ export default function LiveInventory() {
       await loadAssets()
     } catch (error) {
       console.error('Error toggling asset status:', error)
+      event('asset_action_failed', {
+        asset_type: asset.type,
+        asset_id: asset.id,
+        action,
+        station: currentStation
+      })
     } finally {
       setToggleLoading(null)
     }
@@ -240,6 +278,10 @@ export default function LiveInventory() {
             <button
               onClick={() => {
                 console.log('🔄 Force refresh requested')
+                event('button_clicked', {
+                  button_name: 'force_refresh',
+                  section: 'inventory'
+                })
                 window.location.reload()
               }}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
@@ -318,7 +360,12 @@ export default function LiveInventory() {
                 <p className="text-sm font-medium text-gray-700 mb-2">Has the bike been cleaned?</p>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setReturnAnswers((prev) => ({ ...prev, cleaned: true }))}
+                    onClick={() => {
+                      setReturnAnswers((prev) => ({ ...prev, cleaned: true }))
+                      event('button_clicked', {
+                        button_name: 'return_check_cleaned_yes'
+                      })
+                    }}
                     className={`px-3 py-1.5 rounded-md text-sm border ${
                       returnAnswers.cleaned === true
                         ? 'bg-green-600 text-white border-green-600'
@@ -328,7 +375,12 @@ export default function LiveInventory() {
                     Yes
                   </button>
                   <button
-                    onClick={() => setReturnAnswers((prev) => ({ ...prev, cleaned: false }))}
+                    onClick={() => {
+                      setReturnAnswers((prev) => ({ ...prev, cleaned: false }))
+                      event('button_clicked', {
+                        button_name: 'return_check_cleaned_no'
+                      })
+                    }}
                     className={`px-3 py-1.5 rounded-md text-sm border ${
                       returnAnswers.cleaned === false
                         ? 'bg-gray-700 text-white border-gray-700'
@@ -344,7 +396,12 @@ export default function LiveInventory() {
                 <p className="text-sm font-medium text-gray-700 mb-2">Does it need further maintenance?</p>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setReturnAnswers((prev) => ({ ...prev, needsMaintenance: true }))}
+                    onClick={() => {
+                      setReturnAnswers((prev) => ({ ...prev, needsMaintenance: true }))
+                      event('button_clicked', {
+                        button_name: 'return_check_maintenance_yes'
+                      })
+                    }}
                     className={`px-3 py-1.5 rounded-md text-sm border ${
                       returnAnswers.needsMaintenance === true
                         ? 'bg-red-600 text-white border-red-600'
@@ -354,7 +411,12 @@ export default function LiveInventory() {
                     Yes
                   </button>
                   <button
-                    onClick={() => setReturnAnswers((prev) => ({ ...prev, needsMaintenance: false, maintenanceNotes: '' }))}
+                    onClick={() => {
+                      setReturnAnswers((prev) => ({ ...prev, needsMaintenance: false, maintenanceNotes: '' }))
+                      event('button_clicked', {
+                        button_name: 'return_check_maintenance_no'
+                      })
+                    }}
                     className={`px-3 py-1.5 rounded-md text-sm border ${
                       returnAnswers.needsMaintenance === false
                         ? 'bg-gray-700 text-white border-gray-700'
@@ -392,6 +454,9 @@ export default function LiveInventory() {
             <div className="flex gap-3 p-6 border-t bg-gray-50">
               <button
                 onClick={() => {
+                  event('button_clicked', {
+                    button_name: 'return_check_cancel'
+                  })
                   setShowReturnModal(false)
                   setPendingReturn(null)
                   setReturnError('')
@@ -404,6 +469,9 @@ export default function LiveInventory() {
               </button>
               <button
                 onClick={async () => {
+                  event('button_clicked', {
+                    button_name: 'return_check_complete'
+                  })
                   if (!pendingReturn) return
                   if (returnAnswers.cleaned === null || returnAnswers.needsMaintenance === null) {
                     setReturnError('Please answer both questions before completing the return.')
@@ -437,12 +505,26 @@ export default function LiveInventory() {
                     })
                     console.log('✅ Asset state updated')
 
+                    event('bike_return_check_submitted', {
+                      asset_id: pendingReturn.assetId,
+                      asset_label: pendingReturn.assetLabel,
+                      cleaned: returnAnswers.cleaned,
+                      needs_maintenance: returnAnswers.needsMaintenance,
+                      station: currentStation
+                    })
+
                     await loadAssets()
                     setShowReturnModal(false)
                     setPendingReturn(null)
                     setReturnAnswers({ cleaned: null, needsMaintenance: null, maintenanceNotes: '' })
                   } catch (error: any) {
                     console.error('❌ Error completing bike return:', error)
+                    event('asset_action_failed', {
+                      asset_type: 'bike',
+                      asset_id: pendingReturn.assetId,
+                      action: 'return_check_complete',
+                      station: currentStation
+                    })
                     const errorMsg = error?.message || error?.details || JSON.stringify(error) || 'Unknown error'
                     setReturnError(`Failed to save: ${errorMsg}`)
                   } finally {
