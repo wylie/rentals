@@ -1,13 +1,16 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { useApp } from '@/contexts/AppContext'
+import { event } from '@/lib/ga'
 
 export default function AuthScreen() {
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { signInWithPin } = useApp()
+  const pathname = usePathname()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -16,17 +19,38 @@ export default function AuthScreen() {
 
     try {
       const trimmedPin = pin.trim()
+      event('login_attempt', {
+        method: 'pin',
+        page_path: pathname || '/'
+      })
+
       if (trimmedPin.length < 4) {
+        event('login_failed', {
+          method: 'pin',
+          reason: 'pin_too_short'
+        })
         setError('PIN must be at least 4 digits')
         return
       }
 
       const { error } = await signInWithPin(trimmedPin)
       if (error) {
+        event('login_failed', {
+          method: 'pin',
+          reason: 'invalid_pin'
+        })
         setError('Invalid PIN')
         setPin('')
+      } else {
+        event('login', {
+          method: 'pin'
+        })
       }
     } catch (err) {
+      event('login_failed', {
+        method: 'pin',
+        reason: 'unexpected_error'
+      })
       setError('An unexpected error occurred')
     } finally {
       setLoading(false)

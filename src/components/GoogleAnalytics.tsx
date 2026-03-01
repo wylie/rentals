@@ -1,23 +1,46 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Script from 'next/script'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { GA_MEASUREMENT_ID, pageview } from '@/lib/ga'
 
 export default function GoogleAnalytics() {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [isGaReady, setIsGaReady] = useState(false)
 
   useEffect(() => {
-    if (!GA_MEASUREMENT_ID || !pathname) {
+    if (typeof window === 'undefined') {
       return
     }
 
-    const query = window.location.search.replace(/^\?/, '')
+    const handleReady = () => {
+      setIsGaReady(true)
+    }
+
+    if (window.__gaReady) {
+      setIsGaReady(true)
+      return
+    }
+
+    window.addEventListener('ga-ready', handleReady)
+    return () => {
+      window.removeEventListener('ga-ready', handleReady)
+    }
+  }, [])
+
+  const query = useMemo(() => searchParams?.toString() || '', [searchParams])
+
+  useEffect(() => {
+    if (!GA_MEASUREMENT_ID || !pathname || !isGaReady) {
+      return
+    }
+
     const url = query ? `${pathname}?${query}` : pathname
 
     pageview(url)
-  }, [pathname])
+  }, [pathname, query, isGaReady])
 
   if (!GA_MEASUREMENT_ID) {
     return null
@@ -36,6 +59,8 @@ export default function GoogleAnalytics() {
           window.gtag = gtag;
           gtag('js', new Date());
           gtag('config', '${GA_MEASUREMENT_ID}', { send_page_view: false });
+          window.__gaReady = true;
+          window.dispatchEvent(new Event('ga-ready'));
         `}
       </Script>
     </>

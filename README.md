@@ -97,6 +97,67 @@ npm start
 - Switch between stations (frontdesk, bikepark)
 - Logout securely
 
+## 📊 Google Analytics (GA4)
+
+This app is configured for GA4 route-level tracking and custom operational events.
+
+### Required env vars
+
+Set these in `.env.local` (and in deployment env vars):
+
+```bash
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+NEXT_PUBLIC_SITE_URL=https://fleetrental.app
+```
+
+### What is tracked
+
+- **Page views (manual SPA tracking)** for route changes and query changes:
+	- `/` (PIN page)
+	- `/front-desk`
+	- `/bike-park`
+	- `/bike-park/inventory`
+	- `/bike-park/reports`
+- **Auth events**:
+	- `login_attempt` (method: `pin`)
+	- `login` (method: `pin`)
+	- `login_failed` (reasons: `pin_too_short`, `invalid_pin`, `unexpected_error`)
+- **Navigation/operations events** already in app, including settings, fleet updates, report clearing, and section/view changes.
+- **Home redirect event**:
+	- `redirected_from_home_to_front_desk` when an already-authenticated user hits `/`.
+
+### Recommended GA4 configuration
+
+In GA4 Admin:
+
+1. Go to **Events** and mark important events as **Key events** (formerly conversions), for example:
+	 - `login`
+	 - `reports_cleared`
+	 - `fleet_updated`
+2. Create custom dimensions for frequently used event parameters (scope: Event), for example:
+	 - `section`
+	 - `view`
+	 - `reason`
+	 - `settings_tab`
+3. Build a standard report or Exploration using:
+	 - Dimension: **Page path + query string**
+	 - Metrics: **Views**, **Users**, **Event count**
+
+### Quick validation checklist
+
+- Open **Realtime** in GA4.
+- Visit `/`, then `/front-desk`, `/bike-park/inventory`, `/bike-park/reports`.
+- Confirm each route appears as a distinct page path.
+- Trigger a login failure/success and confirm `login_failed` / `login` events appear.
+
+### Dev-only debug toggle
+
+In local development, a floating **GA Debug** button appears in the bottom-right corner.
+
+- Toggle it **On** to log all tracked page views and events to the browser console.
+- State is persisted in `localStorage` with key `ga_debug_mode`.
+- This toggle is hidden automatically outside development mode.
+
 ## 📋 Database Schema
 
 The system uses these main tables:

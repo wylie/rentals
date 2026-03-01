@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useApp } from '@/contexts/AppContext'
 import { getFleetCounts, addAssetsToFleet, removeAssetsFromFleet, forceFleetReset } from '@/lib/database'
 import {
@@ -14,13 +15,12 @@ import { event } from '@/lib/ga'
 
 interface NavigationProps {
   currentArea: 'frontdesk' | 'bikepark'
-  onAreaChange: (area: 'frontdesk' | 'bikepark') => void
   onClearReports?: () => Promise<void>
 }
 
 type SettingsTab = 'session' | 'fleet' | 'subcategories' | 'pin' | 'company' | 'reports' | 'logout'
 
-export default function Navigation({ currentArea, onAreaChange, onClearReports }: NavigationProps) {
+export default function Navigation({ currentArea, onClearReports }: NavigationProps) {
   const [showSettings, setShowSettings] = useState(false)
   const [activeTab, setActiveTab] = useState<SettingsTab>('session')
   const [tempTimeout, setTempTimeout] = useState('')
@@ -371,10 +371,10 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
 
             {/* Second Row: Navigation Links */}
             <div className="flex space-x-2">
-              <button
+              <Link
+                href="/front-desk"
                 onClick={() => {
                   setCurrentStation('Main Location')
-                  onAreaChange('frontdesk')
                   event('button_clicked', {
                     button_name: 'nav_front_desk',
                     section: 'frontdesk',
@@ -389,11 +389,11 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
               >
                 <span className="material-symbols-outlined text-lg">storefront</span>
                 <span>Front Desk</span>
-              </button>
-              <button
+              </Link>
+              <Link
+                href="/bike-park"
                 onClick={() => {
                   setCurrentStation('Bike Park')
-                  onAreaChange('bikepark')
                   event('button_clicked', {
                     button_name: 'nav_bike_park',
                     section: 'bikepark',
@@ -408,7 +408,7 @@ export default function Navigation({ currentArea, onAreaChange, onClearReports }
               >
                 <span className="material-symbols-outlined text-lg">pedal_bike</span>
                 <span>Bike Park</span>
-              </button>
+              </Link>
             </div>
           </div>
         </div>

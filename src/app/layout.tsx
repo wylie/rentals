@@ -1,8 +1,10 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { Suspense } from 'react'
 import { AppProvider } from '@/contexts/AppContext'
 import GoogleAnalytics from '@/components/GoogleAnalytics'
+import AnalyticsDebugToggle from '@/components/AnalyticsDebugToggle'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -26,10 +28,13 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.className} min-h-screen`}>
-        <GoogleAnalytics />
+        <Suspense fallback={null}>
+          <GoogleAnalytics />
+        </Suspense>
         <AppProvider>
           {children}
         </AppProvider>
+        <AnalyticsDebugToggle />
       </body>
     </html>
   )

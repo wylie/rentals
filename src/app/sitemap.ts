@@ -12,5 +12,29 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 1,
     },
+    {
+      url: `${siteUrl}/front-desk`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${siteUrl}/bike-park`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${siteUrl}/bike-park/inventory`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.8,
+    },
+    {
+      url: `${siteUrl}/bike-park/reports`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.8,
+    },
   ]
 }

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useRef, useEffect } from 'react'
+import Link from 'next/link'
 import { useApp } from '@/contexts/AppContext'
 import Navigation from './Navigation'
 import LiveInventory from './LiveInventory'
@@ -10,39 +11,35 @@ import SupabaseConfigNotice from './SupabaseConfigNotice'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { event } from '@/lib/ga'
 
-export default function MainApp() {
-  const [currentArea, setCurrentArea] = useState<'frontdesk' | 'bikepark'>('frontdesk')
-  const [bikeParkView, setBikeParkView] = useState<'inventory' | 'reports'>('inventory')
-  const { isAuthenticated, loading } = useApp()
+interface MainAppProps {
+  currentArea: 'frontdesk' | 'bikepark'
+  bikeParkView?: 'inventory' | 'reports'
+}
+
+export default function MainApp({ currentArea, bikeParkView = 'inventory' }: MainAppProps) {
+  const { isAuthenticated, loading, setCurrentStation } = useApp()
   const reportsRef = useRef<{ clearReports: () => Promise<void> }>(null)
 
-  // Load saved tab preferences from localStorage
+  // Keep station synced with the selected route
   useEffect(() => {
-    const savedArea = localStorage.getItem('selectedArea') as 'frontdesk' | 'bikepark' | null
-    const savedBikeParkView = localStorage.getItem('selectedBikeParkView') as 'inventory' | 'reports' | null
-    
-    if (savedArea) {
-      setCurrentArea(savedArea)
-    }
-    if (savedBikeParkView) {
-      setBikeParkView(savedBikeParkView)
-    }
-  }, [])
+    setCurrentStation(currentArea === 'bikepark' ? 'Bike Park' : 'Main Location')
+  }, [currentArea, setCurrentStation])
 
-  // Save tab preferences to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('selectedArea', currentArea)
     event('section_viewed', {
       section: currentArea,
     })
   }, [currentArea])
 
   useEffect(() => {
-    localStorage.setItem('selectedBikeParkView', bikeParkView)
+    if (currentArea !== 'bikepark') {
+      return
+    }
+
     event('bikepark_view_changed', {
       view: bikeParkView,
     })
-  }, [bikeParkView])
+  }, [currentArea, bikeParkView])
 
   // Show configuration notice if Supabase is not configured
   if (!isSupabaseConfigured()) {
@@ -65,7 +62,6 @@ export default function MainApp() {
     <div className="min-h-screen bg-gray-50">
       <Navigation 
         currentArea={currentArea}
-        onAreaChange={setCurrentArea}
         onClearReports={async () => {
           if (reportsRef.current) {
             await reportsRef.current.clearReports()
@@ -77,13 +73,13 @@ export default function MainApp() {
         {currentArea === 'bikepark' && (
           <div className="mb-4">
             <div className="inline-flex rounded-md shadow-sm" role="group">
-              <button
+              <Link
+                href="/bike-park/inventory"
                 onClick={() => {
                   event('button_clicked', {
                     button_name: 'bikepark_inventory_tab',
                     section: 'bikepark'
                   })
-                  setBikeParkView('inventory')
                 }}
                 className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-l-md transition-colors ${
                   bikeParkView === 'inventory'
@@ -93,14 +89,14 @@ export default function MainApp() {
               >
                 <span className="material-symbols-outlined text-lg">inventory_2</span>
                 <span>Inventory</span>
-              </button>
-              <button
+              </Link>
+              <Link
+                href="/bike-park/reports"
                 onClick={() => {
                   event('button_clicked', {
                     button_name: 'bikepark_reports_tab',
                     section: 'bikepark'
                   })
-                  setBikeParkView('reports')
                 }}
                 className={`flex items-center space-x-1 px-3 py-2 text-sm font-medium border rounded-r-md transition-colors ${
                   bikeParkView === 'reports'
@@ -110,7 +106,7 @@ export default function MainApp() {
               >
                 <span className="material-symbols-outlined text-lg">assessment</span>
                 <span>Reports</span>
-              </button>
+              </Link>
             </div>
           </div>
         )}
