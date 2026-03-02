@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useApp } from '@/contexts/AppContext'
 import { getFleetCounts, addAssetsToFleet, removeAssetsFromFleet, forceFleetReset } from '@/lib/database'
@@ -348,6 +348,34 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
     })
   }
 
+  const handleCloseSettings = () => {
+    setShowSettings(false)
+    setPinError('')
+    setPinMessage('')
+    setClearReportsChecked(false)
+  }
+
+  useEffect(() => {
+    if (!showSettings) {
+      return
+    }
+
+    const handleKeyDown = (keyboardEvent: KeyboardEvent) => {
+      if (keyboardEvent.key === 'Escape') {
+        event('button_clicked', {
+          button_name: 'close_settings_escape',
+          settings_tab: activeTab,
+        })
+        handleCloseSettings()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showSettings, activeTab])
+
   return (
     <>
       <nav className="bg-white shadow-sm border-b">
@@ -416,8 +444,20 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => {
+            event('button_clicked', {
+              button_name: 'close_settings_backdrop',
+              settings_tab: activeTab,
+            })
+            handleCloseSettings()
+          }}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col"
+            onClick={(mouseEvent) => mouseEvent.stopPropagation()}
+          >
             <div className="p-6 border-b">
               <h2 className="text-lg font-bold text-gray-900">Settings</h2>
             </div>
@@ -955,11 +995,7 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
                       button_name: 'cancel_settings',
                       settings_tab: activeTab
                     })
-                    setShowSettings(false)
-                    // Reset states when canceling
-                    setPinError('')
-                    setPinMessage('')
-                    setClearReportsChecked(false)
+                    handleCloseSettings()
                   }}
                   disabled={isUpdatingFleet}
                   className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
