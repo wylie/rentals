@@ -1,12 +1,24 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { supabase, getAppLoginEmail, isAppLoginEmailConfigured, isSupabaseConfigured } from '@/lib/supabase'
+import {
+  supabase,
+  getConfiguredAppLoginAccounts,
+  getAppAdminLoginEmail,
+  getAppStaffLoginEmail,
+  isAnyAppLoginEmailConfigured,
+  isSupabaseConfigured,
+  type AppLoginRole,
+} from '@/lib/supabase'
 import { User } from '@supabase/supabase-js'
 import { initializeUserData, signOut as dbSignOut, getAppSetting, setAppSetting } from '@/lib/database'
 
+type UserRole = AppLoginRole | 'unknown'
+
 interface AppContextType {
   isAuthenticated: boolean
+  isAdmin: boolean
+  userRole: UserRole
   sessionTimeoutHours: number
   companyName: string
   currentStation: string
@@ -31,12 +43,23 @@ const AppContext = createContext<AppContextType | undefined>(undefined)
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [userRole, setUserRole] = useState<UserRole>('unknown')
   const [loading, setLoading] = useState(true)
   const [sessionTimeoutHours, setSessionTimeoutHours] = useState(4) // Default 4 hours
   const [companyName, setCompanyNameState] = useState('')
   const [currentStation, setCurrentStationState] = useState('Main Location')
 
   const isAuthenticated = !!user
+  const isAdmin = userRole === 'admin'
+
+  const getRoleForEmail = (email?: string | null): UserRole => {
+    if (!email) return 'unknown'
+
+    const normalizedEmail = email.toLowerCase()
+    if (normalizedEmail === getAppAdminLoginEmail().toLowerCase()) return 'admin'
+    if (normalizedEmail === getAppStaffLoginEmail().toLowerCase()) return 'staff'
+    return 'unknown'
+  }
 
   const syncPreferencesFromCloud = async () => {
     try {
@@ -110,6 +133,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         const { data: { session } } = await supabase.auth.getSession()
         setUser(session?.user || null)
+        setUserRole(getRoleForEmail(session?.user?.email))
         setLoading(false)
 
         // Initialize user data if they're authenticated and it's their first time
@@ -134,6 +158,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const { data: authSubscription } = supabase.auth.onAuthStateChange(
         async (event, session) => {
           setUser(session?.user || null)
+          setUserRole(getRoleForEmail(session?.user?.email))
           setLoading(false)
 
           // Initialize user data for new sign-ups
@@ -186,29 +211,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!isSupabaseConfigured()) {
       return { error: new Error('Supabase is not configured') }
     }
-    if (!isAppLoginEmailConfigured()) {
+    if (!isAnyAppLoginEmailConfigured()) {
       return { error: new Error('App login email is not configured') }
     }
 
-    const email = getAppLoginEmail()
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password: pin
-    })
-    return { error }
+    const accounts = getConfiguredAppLoginAccounts()
+
+    let lastError: any = null
+    for (const account of accounts) {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: account.email,
+        password: pin
+      })
+
+      if (!error) {
+        return {}
+      }
+      lastError = error
+    }
+
+    return { error: lastError || new Error('Invalid PIN') }
   }
 
   const changePin = async (currentPin: string, newPin: string) => {
     if (!isSupabaseConfigured()) {
       return { error: new Error('Supabase is not configured') }
     }
-    if (!isAppLoginEmailConfigured()) {
+    if (!isAnyAppLoginEmailConfigured()) {
       return { error: new Error('App login email is not configured') }
     }
+    if (!user?.email) {
+      return { error: new Error('No active user session') }
+    }
 
-    const email = getAppLoginEmail()
     const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
+      email: user.email,
       password: currentPin
     })
     if (signInError) {
@@ -227,11 +264,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await dbSignOut()
     }
     setUser(null)
+    setUserRole('unknown')
   }
 
   return (
     <AppContext.Provider value={{
       isAuthenticated,
+      isAdmin,
+      userRole,
       sessionTimeoutHours,
       companyName,
       currentStation,

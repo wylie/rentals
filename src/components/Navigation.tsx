@@ -38,6 +38,8 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
   const [tempSubcategories, setTempSubcategories] = useState<SubcategorySettings>({ bike: [], helmet: [] })
   const [fleetNumberInputs, setFleetNumberInputs] = useState<Record<string, string>>({})
   const {
+    isAdmin,
+    userRole,
     sessionTimeoutHours,
     companyName,
     currentStation,
@@ -47,6 +49,10 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
     changePin,
     logout
   } = useApp()
+
+  const visibleTabs: SettingsTab[] = isAdmin
+    ? ['session', 'fleet', 'subcategories', 'pin', 'company', 'reports', 'logout']
+    : ['pin', 'logout']
 
   const inputKey = (type: AssetType, subcategoryId: string) => `${type}-${subcategoryId}`
 
@@ -133,6 +139,7 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
       section: currentArea,
       station: currentStation
     })
+    setActiveTab(isAdmin ? 'session' : 'pin')
     setTempTimeout(sessionTimeoutHours.toString())
     setTempCompanyName(companyName)
     
@@ -171,8 +178,63 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
     setIsUpdatingFleet(true)
     setPinError('')
     setPinMessage('')
+
+    const updatePinIfRequested = async (): Promise<boolean> => {
+      if (!(currentPin.trim() || newPin.trim() || confirmPin.trim())) {
+        return true
+      }
+
+      if (newPin.trim().length < 4) {
+        setPinError('New PIN must be at least 4 digits')
+        return false
+      }
+      if (newPin !== confirmPin) {
+        setPinError('New PIN and confirmation do not match')
+        return false
+      }
+      if (!(currentPin.trim() && newPin.trim())) {
+        setPinError('Enter current and new PIN')
+        return false
+      }
+
+      const { error } = await changePin(currentPin.trim(), newPin.trim())
+      if (error) {
+        event('settings_save_failed', {
+          reason: 'pin_update_failed',
+          settings_tab: activeTab
+        })
+        setPinError(error.message || 'Failed to update PIN')
+        return false
+      }
+
+      event('pin_changed', {
+        section: currentArea,
+        role: userRole,
+      })
+      setPinMessage('PIN updated successfully')
+      setCurrentPin('')
+      setNewPin('')
+      setConfirmPin('')
+      return true
+    }
     
     try {
+      if (!isAdmin) {
+        const pinUpdated = await updatePinIfRequested()
+        if (!pinUpdated) {
+          setIsUpdatingFleet(false)
+          return
+        }
+
+        event('settings_saved', {
+          settings_tab: activeTab,
+          role: userRole,
+        })
+        setShowSettings(false)
+        setIsUpdatingFleet(false)
+        return
+      }
+
       // Update session timeout
       const hours = parseFloat(tempTimeout)
       if (hours > 0 && hours <= 168) {
@@ -184,37 +246,10 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
 
       await saveSubcategorySettings(tempSubcategories)
       
-      // Update PIN if all fields are filled
-      if (currentPin.trim() || newPin.trim() || confirmPin.trim()) {
-        if (newPin.trim().length < 4) {
-          setPinError('New PIN must be at least 4 digits')
-          setIsUpdatingFleet(false)
-          return
-        }
-        if (newPin !== confirmPin) {
-          setPinError('New PIN and confirmation do not match')
-          setIsUpdatingFleet(false)
-          return
-        }
-        if (currentPin.trim() && newPin.trim()) {
-          const { error } = await changePin(currentPin.trim(), newPin.trim())
-          if (error) {
-            event('settings_save_failed', {
-              reason: 'pin_update_failed',
-              settings_tab: activeTab
-            })
-            setPinError(error.message || 'Failed to update PIN')
-            setIsUpdatingFleet(false)
-            return
-          }
-          event('pin_changed', {
-            section: currentArea
-          })
-          setPinMessage('PIN updated successfully')
-          setCurrentPin('')
-          setNewPin('')
-          setConfirmPin('')
-        }
+      const pinUpdated = await updatePinIfRequested()
+      if (!pinUpdated) {
+        setIsUpdatingFleet(false)
+        return
       }
       
       // Clear reports if checkbox is checked
@@ -460,88 +495,53 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
           >
             <div className="p-6 border-b">
               <h2 className="text-lg font-bold text-gray-900">Settings</h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Access level: {isAdmin ? 'Admin' : 'Staff'}
+              </p>
             </div>
             
             {/* Tabs */}
             <div className="border-b bg-gray-50 overflow-x-auto">
               <div className="flex min-w-max">
-                <button
-                  onClick={() => handleSettingsTabChange('session')}
-                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
-                    activeTab === 'session'
-                      ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-lg">timer</span>
-                  <span>Session</span>
-                </button>
-                <button
-                  onClick={() => handleSettingsTabChange('fleet')}
-                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
-                    activeTab === 'fleet'
-                      ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-lg">garage</span>
-                  <span>Fleet</span>
-                </button>
-                <button
-                  onClick={() => handleSettingsTabChange('subcategories')}
-                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
-                    activeTab === 'subcategories'
-                      ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-lg">category</span>
-                  <span>Subcategories</span>
-                </button>
-                <button
-                  onClick={() => handleSettingsTabChange('pin')}
-                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
-                    activeTab === 'pin'
-                      ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-lg">lock</span>
-                  <span>Access PIN</span>
-                </button>
-                <button
-                  onClick={() => handleSettingsTabChange('company')}
-                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
-                    activeTab === 'company'
-                      ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-lg">business</span>
-                  <span>Company</span>
-                </button>
-                <button
-                  onClick={() => handleSettingsTabChange('reports')}
-                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
-                    activeTab === 'reports'
-                      ? 'border-b-2 border-blue-600 text-blue-600 bg-white'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-lg">summarize</span>
-                  <span>Reports</span>
-                </button>
-                <button
-                  onClick={() => handleSettingsTabChange('logout')}
-                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
-                    activeTab === 'logout'
-                      ? 'border-b-2 border-red-600 text-red-600 bg-white'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-lg">logout</span>
-                  <span>Logout</span>
-                </button>
+                {visibleTabs.map((tab) => {
+                  const isDangerTab = tab === 'logout'
+                  const isActive = activeTab === tab
+                  const iconByTab: Record<SettingsTab, string> = {
+                    session: 'timer',
+                    fleet: 'garage',
+                    subcategories: 'category',
+                    pin: 'lock',
+                    company: 'business',
+                    reports: 'summarize',
+                    logout: 'logout',
+                  }
+                  const labelByTab: Record<SettingsTab, string> = {
+                    session: 'Session',
+                    fleet: 'Fleet',
+                    subcategories: 'Subcategories',
+                    pin: 'Access PIN',
+                    company: 'Company',
+                    reports: 'Reports',
+                    logout: 'Logout',
+                  }
+
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => handleSettingsTabChange(tab)}
+                      className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                        isActive
+                          ? isDangerTab
+                            ? 'border-b-2 border-red-600 text-red-600 bg-white'
+                            : 'border-b-2 border-blue-600 text-blue-600 bg-white'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-lg">{iconByTab[tab]}</span>
+                      <span>{labelByTab[tab]}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
@@ -818,7 +818,9 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
               {activeTab === 'pin' && (
                 <div className="space-y-4">
                   <p className="text-sm text-gray-600 mb-4">
-                    Change the PIN used to access this application. The PIN must be at least 4 digits.
+                    {isAdmin
+                      ? 'Change the Admin PIN used to access admin features. The PIN must be at least 4 digits.'
+                      : 'Change your Staff PIN. The PIN must be at least 4 digits.'}
                   </p>
                   
                   <div>

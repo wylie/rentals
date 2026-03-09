@@ -33,7 +33,9 @@ NEXT_PUBLIC_SUPABASE_URL=your_actual_supabase_project_url_here
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_actual_supabase_publishable_key_here
 # Optional legacy fallback if needed:
 # NEXT_PUBLIC_SUPABASE_ANON_KEY=your_actual_supabase_anon_key_here
-NEXT_PUBLIC_APP_LOGIN_EMAIL=shared-login@example.com
+NEXT_PUBLIC_APP_ADMIN_LOGIN_EMAIL=admin@example.com
+# Optional staff account with separate PIN:
+# NEXT_PUBLIC_APP_STAFF_LOGIN_EMAIL=staff@example.com
 ```
 
 For Vercel production/preview deployments, add the same keys in **Project Settings -> Environment Variables** and redeploy.

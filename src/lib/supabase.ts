@@ -5,7 +5,8 @@ const supabaseAnonKey =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   'placeholder-key'
-const appLoginEmail = process.env.NEXT_PUBLIC_APP_LOGIN_EMAIL || ''
+const appAdminLoginEmail = process.env.NEXT_PUBLIC_APP_ADMIN_LOGIN_EMAIL || process.env.NEXT_PUBLIC_APP_LOGIN_EMAIL || ''
+const appStaffLoginEmail = process.env.NEXT_PUBLIC_APP_STAFF_LOGIN_EMAIL || ''
 
 // Check if we have valid Supabase configuration
 const hasValidConfig = supabaseUrl !== 'https://placeholder.supabase.co' && 
@@ -24,8 +25,27 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Helper to check if Supabase is properly configured
 export const isSupabaseConfigured = () => hasValidConfig
-export const isAppLoginEmailConfigured = () => appLoginEmail.includes('@')
-export const getAppLoginEmail = () => appLoginEmail
+export const isAppAdminLoginEmailConfigured = () => appAdminLoginEmail.includes('@')
+export const isAppStaffLoginEmailConfigured = () => appStaffLoginEmail.includes('@')
+export const isAnyAppLoginEmailConfigured = () =>
+  isAppAdminLoginEmailConfigured() || isAppStaffLoginEmailConfigured()
+export const getAppAdminLoginEmail = () => appAdminLoginEmail
+export const getAppStaffLoginEmail = () => appStaffLoginEmail
+
+export type AppLoginRole = 'admin' | 'staff'
+
+export const getConfiguredAppLoginAccounts = (): Array<{ role: AppLoginRole; email: string }> => {
+  const accounts: Array<{ role: AppLoginRole; email: string }> = []
+
+  if (isAppAdminLoginEmailConfigured()) {
+    accounts.push({ role: 'admin', email: appAdminLoginEmail })
+  }
+  if (isAppStaffLoginEmailConfigured()) {
+    accounts.push({ role: 'staff', email: appStaffLoginEmail })
+  }
+
+  return accounts
+}
 
 // Database types
 export interface Database {

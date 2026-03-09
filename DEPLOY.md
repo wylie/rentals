@@ -15,7 +15,8 @@ In **Project Settings -> Environment Variables**, add:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (preferred)
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (legacy, optional)
-- `NEXT_PUBLIC_APP_LOGIN_EMAIL`
+- `NEXT_PUBLIC_APP_ADMIN_LOGIN_EMAIL` (required)
+- `NEXT_PUBLIC_APP_STAFF_LOGIN_EMAIL` (optional)
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID` (optional, for analytics)
 - `NEXT_PUBLIC_SITE_URL` (recommended: your production domain)
 

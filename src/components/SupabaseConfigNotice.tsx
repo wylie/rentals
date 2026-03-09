@@ -35,7 +35,7 @@ export default function SupabaseConfigNotice() {
                   <li>Create a Supabase account at <a href="https://supabase.com" className="underline text-blue-600" target="_blank" rel="noopener noreferrer">supabase.com</a></li>
                   <li>Set up the database using the provided SQL schema</li>
                   <li>Set environment variables for your deployment (<code className="bg-yellow-100 px-1 rounded">.env.local</code> locally, Vercel Project Settings in production)</li>
-                  <li>Set the shared app login email for PIN access</li>
+                  <li>Set app login emails for PIN access (Admin required, Staff optional)</li>
                 </ol>
               </div>
             </div>
@@ -47,7 +47,7 @@ export default function SupabaseConfigNotice() {
           <div className="space-y-3 text-sm text-gray-600">
             <p>📖 Check the <code className="bg-gray-100 px-1 rounded">SUPABASE_SETUP.md</code> file for detailed instructions</p>
             <p>🗄️ Run the SQL setup files in the project root (<code className="bg-gray-100 px-1 rounded">supabase-*.sql</code>)</p>
-            <p>🔧 Set <code className="bg-gray-100 px-1 rounded">NEXT_PUBLIC_SUPABASE_URL</code>, <code className="bg-gray-100 px-1 rounded">NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code> (or legacy <code className="bg-gray-100 px-1 rounded">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>), and <code className="bg-gray-100 px-1 rounded">NEXT_PUBLIC_APP_LOGIN_EMAIL</code> in your local env file and in your host environment settings</p>
+            <p>🔧 Set <code className="bg-gray-100 px-1 rounded">NEXT_PUBLIC_SUPABASE_URL</code>, <code className="bg-gray-100 px-1 rounded">NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code> (or legacy <code className="bg-gray-100 px-1 rounded">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>), <code className="bg-gray-100 px-1 rounded">NEXT_PUBLIC_APP_ADMIN_LOGIN_EMAIL</code>, and optional <code className="bg-gray-100 px-1 rounded">NEXT_PUBLIC_APP_STAFF_LOGIN_EMAIL</code> in your local env file and in your host environment settings</p>
           </div>
         </div>
 

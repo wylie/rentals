@@ -47,6 +47,9 @@ NEXT_PUBLIC_SUPABASE_URL=your_actual_supabase_project_url
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_actual_supabase_publishable_key
 # Optional legacy fallback if needed:
 # NEXT_PUBLIC_SUPABASE_ANON_KEY=your_actual_supabase_anon_key
+NEXT_PUBLIC_APP_ADMIN_LOGIN_EMAIL=admin@example.com
+# Optional staff account with separate PIN:
+# NEXT_PUBLIC_APP_STAFF_LOGIN_EMAIL=staff@example.com
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 NEXT_PUBLIC_SITE_URL=https://fleetrental.app
 ```

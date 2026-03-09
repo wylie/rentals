@@ -68,7 +68,7 @@ export default function AuthScreen() {
             Rental Management
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Enter your PIN to continue
+            Enter your Admin or Staff PIN to continue
           </p>
         </div>
         
