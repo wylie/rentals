@@ -58,6 +58,7 @@ export interface BikeReturnCheck {
   asset_id: number
   cleaned: boolean
   needs_maintenance: boolean
+  maintenance_notes: string | null
   created_at: string
   user_id: string
 }

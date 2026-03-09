@@ -1,7 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  'placeholder-key'
 const appLoginEmail = process.env.NEXT_PUBLIC_APP_LOGIN_EMAIL || ''
 
 // Check if we have valid Supabase configuration
@@ -16,7 +19,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-    redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/` : undefined,
   },
 })
 

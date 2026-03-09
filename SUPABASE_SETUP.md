@@ -11,11 +11,9 @@ This project has been updated to use Supabase for cloud database storage, which 
 ## 2. Set up the Database
 
 1. In your Supabase dashboard, go to the **SQL Editor**
-2. Copy the contents of `supabase-schema.sql` (in the project root)
-3. Paste it into the SQL Editor and click **Run**
-4. Then run `supabase-subcategories.sql` to enable subcategory sync across devices
-5. Then run `supabase-app-settings.sql` to sync company name and session timeout across devices
-6. Then run `supabase-bike-return-checks.sql` to store Bike Park return checklists
+2. Run `supabase-subcategories.sql` to enable subcategory sync across devices
+3. Run `supabase-app-settings.sql` to sync company name and session timeout across devices
+4. Run `supabase-bike-return-checks.sql` to store Bike Park return checklists
 
 This will create all the necessary tables and security policies.
 
@@ -32,9 +30,13 @@ This will create all the necessary tables and security policies.
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your_actual_supabase_project_url_here
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_actual_supabase_anon_key_here
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_actual_supabase_publishable_key_here
+# Optional legacy fallback if needed:
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=your_actual_supabase_anon_key_here
 NEXT_PUBLIC_APP_LOGIN_EMAIL=shared-login@example.com
 ```
+
+For Vercel production/preview deployments, add the same keys in **Project Settings -> Environment Variables** and redeploy.
 
 ## 5. Start the Development Server
 

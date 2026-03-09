@@ -35,21 +35,25 @@ This project has been upgraded from local storage to cloud-based data storage:
 
 1. Create a free account at [supabase.com](https://supabase.com/)
 2. Create a new project
-3. In the SQL Editor, run the contents of `supabase-schema.sql`
-4. Run `supabase-subcategories.sql` to sync subcategories across devices
-5. Run `supabase-app-settings.sql` to sync app settings (company name/session timeout) across devices
-6. Run `supabase-bike-return-checks.sql` to store Bike Park return checklists
-7. Get your project URL and API key from Settings → API
-8. Update `.env.local` with your credentials:
+3. In the SQL Editor, run the required SQL files in this project root:
+	- `supabase-subcategories.sql`
+	- `supabase-app-settings.sql`
+	- `supabase-bike-return-checks.sql`
+4. Get your project URL and API key from Settings → API
+5. Update `.env.local` with your credentials:
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your_actual_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_actual_supabase_anon_key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_actual_supabase_publishable_key
+# Optional legacy fallback if needed:
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=your_actual_supabase_anon_key
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 NEXT_PUBLIC_SITE_URL=https://fleetrental.app
 ```
 
 Use your own GA4 Measurement ID from Google Analytics (Data Streams → Web).
+
+For Vercel deployment, add the same variables in Project Settings → Environment Variables and redeploy.
 
 ### 2. Install and Run
 
@@ -170,7 +174,6 @@ All data is secured with Row Level Security (RLS) - users can only access their 
 ## 🔧 Configuration Files
 
 - `/.env.local` - Supabase credentials
-- `/supabase-schema.sql` - Database setup script
 - `/supabase-subcategories.sql` - Subcategory sync schema script
 - `/supabase-app-settings.sql` - App settings sync schema script
 - `/supabase-bike-return-checks.sql` - Bike Park return checklist schema script
@@ -188,7 +191,6 @@ Built with:
 
 For detailed setup instructions, see:
 - `SUPABASE_SETUP.md` - Complete Supabase configuration guide
-- `supabase-schema.sql` - Database schema
 
 ## 🆘 Troubleshooting
 

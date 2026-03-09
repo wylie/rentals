@@ -262,7 +262,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
   )
 
   const typeReportData = reportData.filter(item => item.asset.type === selectedAssetType)
-  const availableSubcategories = [...new Set(typeReportData.map((item) => item.subcategoryName))].sort((a, b) => {
+  const availableSubcategories = Array.from(new Set(typeReportData.map((item) => item.subcategoryName))).sort((a, b) => {
     if (a === 'Uncategorized') return 1
     if (b === 'Uncategorized') return -1
     return a.localeCompare(b)
