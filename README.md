@@ -72,7 +72,18 @@ npm run build
 
 # Start production server
 npm start
+
+# Run smoke checks (local)
+npm run smoke
 ```
+
+## 🚢 Operations (Vercel)
+
+- **Health endpoint**: `/api/health` returns environment readiness and status.
+- **Smoke tests**:
+	- `npm run smoke` (defaults to `http://localhost:3000`)
+	- `npm run smoke:prod` (checks `https://www.fleetrental.app`)
+- **Release checklist**: See `RELEASE_CHECKLIST.md` for deployment and post-deploy verification steps.
 
 ### 3. First Time Setup
 

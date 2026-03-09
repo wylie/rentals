@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "smoke": "node scripts/smoke-test.mjs",
+    "smoke:prod": "BASE_URL=https://www.fleetrental.app node scripts/smoke-test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",
