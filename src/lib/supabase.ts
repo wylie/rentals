@@ -5,7 +5,7 @@ const supabaseAnonKey =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
   'placeholder-key'
-const appAdminLoginEmail = process.env.NEXT_PUBLIC_APP_ADMIN_LOGIN_EMAIL || process.env.NEXT_PUBLIC_APP_LOGIN_EMAIL || ''
+const appAdminLoginEmail = process.env.NEXT_PUBLIC_APP_ADMIN_LOGIN_EMAIL || ''
 const appStaffLoginEmail = process.env.NEXT_PUBLIC_APP_STAFF_LOGIN_EMAIL || ''
 
 // Check if we have valid Supabase configuration
