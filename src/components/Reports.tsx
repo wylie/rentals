@@ -391,7 +391,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
           )}
           {reportView === 'usage' && (
             <div className="flex items-center flex-wrap gap-2">
-              <div className="inline-flex rounded-md shadow-sm" role="group">
+              <div className="inline-flex rounded-md shadow-sm ml-0 mr-2" role="group">
                 <button
                   onClick={() => {
                     setSelectedAssetType('bike')
