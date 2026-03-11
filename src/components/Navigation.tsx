@@ -29,10 +29,13 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
           await saveSubcategorySettings(tempSubcategories)
           event('settings_saved', { tab: 'subcategories' })
         }
+        if (activeTab === 'company') {
+          setCompanyName(tempCompanyName)
+          event('settings_saved', { tab: 'company', company_name: tempCompanyName })
+        }
         // Add other tab save logic as needed
         setShowSettings(false)
       } catch (err) {
-        // Optionally handle error
         event('settings_save_error', { tab: activeTab, error: String(err) })
       } finally {
         setIsUpdatingFleet(false)
@@ -144,6 +147,7 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
     (async () => {
       const latest = await getSubcategorySettings();
       setTempSubcategories(latest);
+      setTempCompanyName(companyName || '')
     })();
     const handleKeyDown = (keyboardEvent: KeyboardEvent) => {
       if (keyboardEvent.key === 'Escape') {
