@@ -176,6 +176,14 @@ In local development, a floating **GA Debug** button appears in the bottom-right
 - State is persisted in `localStorage` with key `ga_debug_mode`.
 - This toggle is hidden automatically outside development mode.
 
+## 🆕 Recent Updates
+
+- UI refactored for improved alignment and modern select menu styling
+- Subcategory assignment is now absolute, with dropdown-based asset counts and auto-partitioning
+- Material Symbols Outlined used for consistent iconography
+- Bug fixes for asset assignment, modal logic, and build-blocking syntax errors
+- Reports page select menu updated to match new UI style
+
 ## 📋 Database Schema
 
 The system uses these main tables:
