@@ -601,107 +601,7 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
 
               {/* Fleet Management Tab */}
               {activeTab === 'fleet' && (
-                <div className="space-y-4">
-                  <p className="text-sm text-gray-600 mb-4">
-                    Adjust the total number of bikes and helmets in your fleet. Changes will take effect after saving.
-                  </p>
-                  
-                  <div>
-                    <label htmlFor="bikeCount" className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-                      <span className="material-symbols-outlined text-blue-600">pedal_bike</span>
-                      <span>Number of Bikes</span>
-                    </label>
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={() => setTempBikeCount(Math.max(0, parseInt(tempBikeCount) - 1).toString())}
-                        className="flex items-center justify-center w-10 h-10 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
-                        disabled={isUpdatingFleet}
-                      >
-                        <span className="material-symbols-outlined">remove</span>
-                      </button>
-                      <input
-                        id="bikeCount"
-                        type="number"
-                        min="0"
-                        max="999"
-                        value={tempBikeCount}
-                        onChange={(e) => setTempBikeCount(e.target.value)}
-                        className="w-24 px-3 py-2 border border-gray-300 rounded-md text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-semibold"
-                        disabled={isUpdatingFleet}
-                      />
-                      <button
-                        onClick={() => setTempBikeCount((parseInt(tempBikeCount) + 1).toString())}
-                        className="flex items-center justify-center w-10 h-10 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
-                        disabled={isUpdatingFleet}
-                      >
-                        <span className="material-symbols-outlined">add</span>
-                      </button>
-                      <span className="text-sm text-gray-500">
-                        Currently: <strong>{fleetCounts.bikes}</strong>
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="helmetCount" className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-                      <span className="material-symbols-outlined text-orange-600">sports_motorsports</span>
-                      <span>Number of Helmets</span>
-                    </label>
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={() => setTempHelmetCount(Math.max(0, parseInt(tempHelmetCount) - 1).toString())}
-                        className="flex items-center justify-center w-10 h-10 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
-                        disabled={isUpdatingFleet}
-                      >
-                        <span className="material-symbols-outlined">remove</span>
-                      </button>
-                      <input
-                        id="helmetCount"
-                        type="number"
-                        min="0"
-                        max="999"
-                        value={tempHelmetCount}
-                        onChange={(e) => setTempHelmetCount(e.target.value)}
-                        className="w-24 px-3 py-2 border border-gray-300 rounded-md text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-semibold"
-                        disabled={isUpdatingFleet}
-                      />
-                      <button
-                        onClick={() => setTempHelmetCount((parseInt(tempHelmetCount) + 1).toString())}
-                        className="flex items-center justify-center w-10 h-10 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
-                        disabled={isUpdatingFleet}
-                      >
-                        <span className="material-symbols-outlined">add</span>
-                      </button>
-                      <span className="text-sm text-gray-500">
-                        Currently: <strong>{fleetCounts.helmets}</strong>
-                      </span>
-                    </div>
-                  </div>
-
-                  {(tempBikeCount !== fleetCounts.bikes.toString() || tempHelmetCount !== fleetCounts.helmets.toString()) && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-                      <p className="text-sm font-semibold text-blue-900 mb-1">Changes to be applied:</p>
-                      <ul className="text-sm text-blue-700 space-y-1">
-                        {tempBikeCount !== fleetCounts.bikes.toString() && (
-                          <li>
-                            • Bikes: {fleetCounts.bikes} → {tempBikeCount} 
-                            <span className={parseInt(tempBikeCount) - fleetCounts.bikes > 0 ? 'text-green-600' : 'text-red-600'}>
-                              {' '}({parseInt(tempBikeCount) - fleetCounts.bikes > 0 ? '+' : ''}{parseInt(tempBikeCount) - fleetCounts.bikes})
-                            </span>
-                          </li>
-                        )}
-                        {tempHelmetCount !== fleetCounts.helmets.toString() && (
-                          <li>
-                            • Helmets: {fleetCounts.helmets} → {tempHelmetCount} 
-                            <span className={parseInt(tempHelmetCount) - fleetCounts.helmets > 0 ? 'text-green-600' : 'text-red-600'}>
-                              {' '}({parseInt(tempHelmetCount) - fleetCounts.helmets > 0 ? '+' : ''}{parseInt(tempHelmetCount) - fleetCounts.helmets})
-                            </span>
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  )}
-                </div>
+                // Fleet management tab removed
               )}
 
               {activeTab === 'subcategories' && (
@@ -760,29 +660,27 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
                                   </div>
 
                                   <div className="flex items-center gap-2">
-                                    <input
-                                      type="number"
-                                      min="1"
-                                      value={fleetNumberInputs[key] || ''}
-                                      onChange={(e) => setFleetNumberInputs((prev) => ({ ...prev, [key]: e.target.value }))}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          e.preventDefault()
-                                          handleAddFleetNumber(type, subcategory.id)
-                                        }
+                                    <select
+                                      value={subcategory.fleetNumbers.length}
+                                      onChange={e => {
+                                        const count = parseInt(e.target.value, 10)
+                                        const numbers = Array.from({ length: count }, (_, i) => i + 1)
+                                        setTempSubcategories(prev => ({
+                                          ...prev,
+                                          [type]: prev[type].map(s =>
+                                            s.id === subcategory.id ? { ...s, fleetNumbers: numbers } : s
+                                          )
+                                        }))
                                       }}
-                                      className="w-28 px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                      placeholder="Fleet #"
-                                      disabled={isUpdatingFleet}
-                                    />
-                                    <button
-                                      onClick={() => handleAddFleetNumber(type, subcategory.id)}
-                                      className="inline-flex items-center space-x-1 px-3 py-2 rounded-md bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors"
+                                      className="w-32 px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                       disabled={isUpdatingFleet}
                                     >
-                                      <span className="material-symbols-outlined text-base">add</span>
-                                      <span>Add Number</span>
-                                    </button>
+                                      <option value={0}>Select count</option>
+                                      {[...Array(25)].map((_, i) => (
+                                        <option key={i + 1} value={i + 1}>{i + 1}</option>
+                                      ))}
+                                    </select>
+                                    <span className="text-xs text-gray-500">Set number of {heading.toLowerCase()}</span>
                                   </div>
 
                                   {subcategory.fleetNumbers.length > 0 ? (
