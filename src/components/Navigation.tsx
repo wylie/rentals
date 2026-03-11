@@ -21,6 +21,23 @@ interface NavigationProps {
 type SettingsTab = 'session' | 'fleet' | 'subcategories' | 'pin' | 'company' | 'reports' | 'logout'
 
 export default function Navigation({ currentArea, onClearReports }: NavigationProps) {
+    // Save handler for Settings modal
+    const handleSaveSettings = async () => {
+      setIsUpdatingFleet(true)
+      try {
+        if (activeTab === 'subcategories') {
+          await saveSubcategorySettings(tempSubcategories)
+          event('settings_saved', { tab: 'subcategories' })
+        }
+        // Add other tab save logic as needed
+        setShowSettings(false)
+      } catch (err) {
+        // Optionally handle error
+        event('settings_save_error', { tab: activeTab, error: String(err) })
+      } finally {
+        setIsUpdatingFleet(false)
+      }
+    }
   const [showSettings, setShowSettings] = useState(false)
   const [activeTab, setActiveTab] = useState<SettingsTab>('session')
   const [tempTimeout, setTempTimeout] = useState('')
@@ -584,7 +601,7 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
             {activeTab !== 'logout' && (
               <div className="flex space-x-3 p-6 border-t bg-gray-50">
                 <button
-                  onClick={handleCloseSettings}
+                  onClick={handleSaveSettings}
                   disabled={isUpdatingFleet}
                   className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
                     isUpdatingFleet 
