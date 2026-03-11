@@ -488,10 +488,8 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
             })
             handleCloseSettings()
           }}
-        >
-          <div
-            className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col"
-            onClick={(mouseEvent) => mouseEvent.stopPropagation()}
+          {/* Settings Modal */}
+          {showSettings && (
           >
             <div className="p-6 border-b">
               <h2 className="text-lg font-bold text-gray-900">Settings</h2>
@@ -563,7 +561,7 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
                       value={tempTimeout}
                       onChange={(e) => setTempTimeout(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="4"
+                      placeholder="8"
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       How long to stay logged in (0.1 to 168 hours)
