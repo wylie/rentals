@@ -488,9 +488,6 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
             })
             handleCloseSettings()
           }}
-          {/* Settings Modal */}
-          {showSettings && (
-          >
             <div className="p-6 border-b">
               <h2 className="text-lg font-bold text-gray-900">Settings</h2>
               <p className="text-xs text-gray-500 mt-1">
