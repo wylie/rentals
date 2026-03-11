@@ -195,6 +195,6 @@ export const getDisplayLabel = (
 
 export const createSubcategory = (): Subcategory => ({
   id: crypto.randomUUID(),
-  name: 'New Subcategory',
+  name: '',
   fleetNumbers: []
 })
