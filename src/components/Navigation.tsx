@@ -155,7 +155,7 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
               </h1>
               
               <button
-                onClick={handleOpenSettings}
+                onClick={handleCloseSettings}
                 className="flex items-center px-2 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                 title="Settings"
               >
@@ -407,10 +407,6 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
                                     </select>
                                     <span className="text-xs text-gray-500">Set number of {heading.toLowerCase()}</span>
                                   </div>
-
-                                  {subcategory.fleetNumbers.length > 0 ? (
-                                    // Fleet number buttons removed; only select menu remains
-                                  ) : null}
                                 </div>
                               )
                             })}
@@ -588,7 +584,7 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
             {activeTab !== 'logout' && (
               <div className="flex space-x-3 p-6 border-t bg-gray-50">
                 <button
-                  onClick={handleSaveSettings}
+                  onClick={handleCloseSettings}
                   disabled={isUpdatingFleet}
                   className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-md transition-colors ${
                     isUpdatingFleet 
