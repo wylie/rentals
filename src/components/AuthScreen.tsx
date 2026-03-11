@@ -93,6 +93,18 @@ export default function AuthScreen() {
             </div>
           </div>
 
+          <div className="text-right mt-2">
+            <a
+              href="/reset-password"
+              className="text-sm text-indigo-600 hover:text-indigo-800 underline"
+              onClick={e => {
+                event('button_clicked', { button_name: 'forgot_pin', page_path: pathname || '/' })
+              }}
+            >
+              Forgot PIN?
+            </a>
+          </div>
+
           {error && (
             <div className="flex items-center space-x-2 text-red-600 text-sm text-center bg-red-50 p-3 rounded-md">
               <span className="material-symbols-outlined text-lg">error</span>
