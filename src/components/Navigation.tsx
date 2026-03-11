@@ -242,14 +242,14 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
             className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col"
             onClick={(mouseEvent) => mouseEvent.stopPropagation()}
           >
+            {/* Always show tabs at the top, sticky positioning */}
             <div className="p-6 border-b">
               <h2 className="text-lg font-bold text-gray-900">Settings</h2>
               <p className="text-xs text-gray-500 mt-1">
                 Access level: {isAdmin ? 'Admin' : 'Staff'}
               </p>
             </div>
-            {/* Tabs */}
-            <div className="border-b bg-gray-50 overflow-x-auto">
+            <div className="border-b bg-gray-50 overflow-x-auto sticky top-0 z-10">
               <div className="flex min-w-max">
                 {visibleTabs.map((tab) => {
                   const isDangerTab = tab === 'logout'
