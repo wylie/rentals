@@ -384,14 +384,14 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
           </div>
 
           {reportView === 'usage' && (
-            <h2 className="text-2xl font-bold text-gray-800">Usage Report</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mr-8">Usage Report</h2>
           )}
           {reportView === 'maintenance' && (
             <h2 className="text-2xl font-bold text-gray-800">Bike Park Maintenance Logs</h2>
           )}
           {reportView === 'usage' && (
-            <div className="flex items-center flex-wrap gap-2">
-              <div className="inline-flex rounded-md shadow-sm ml-0 mr-2" role="group">
+            <div className="flex items-center flex-wrap gap-2 mr-8">
+              <div className="inline-flex rounded-md shadow-sm mr-8" role="group">
                 <button
                   onClick={() => {
                     setSelectedAssetType('bike')
