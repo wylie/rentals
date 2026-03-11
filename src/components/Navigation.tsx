@@ -51,7 +51,7 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
   } = useApp()
 
   const visibleTabs: SettingsTab[] = isAdmin
-    ? ['session', 'fleet', 'subcategories', 'pin', 'company', 'reports', 'logout']
+    ? ['session', 'subcategories', 'pin', 'company', 'reports', 'logout']
     : ['pin', 'logout']
 
   const inputKey = (type: AssetType, subcategoryId: string) => `${type}-${subcategoryId}`
@@ -88,107 +88,7 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
   const handleAddFleetNumber = (type: AssetType, subcategoryId: string) => {
     const key = inputKey(type, subcategoryId)
     const rawValue = fleetNumberInputs[key] || ''
-    const fleetNumber = parseInt(rawValue, 10)
-
-    if (!Number.isFinite(fleetNumber) || fleetNumber <= 0) {
-      return
-    }
-
-    setTempSubcategories((prev) => {
-      const updatedTypeSubcategories = prev[type].map((subcategory) => {
-        const withoutFleetNumber = subcategory.fleetNumbers.filter((number) => number !== fleetNumber)
-        if (subcategory.id === subcategoryId) {
-          return {
-            ...subcategory,
-            fleetNumbers: [...withoutFleetNumber, fleetNumber].sort((a, b) => a - b)
-          }
-        }
-
-        return {
-          ...subcategory,
-          fleetNumbers: withoutFleetNumber
-        }
-      })
-
-      return {
-        ...prev,
-        [type]: updatedTypeSubcategories
-      }
-    })
-
-    setFleetNumberInputs((prev) => ({
-      ...prev,
-      [key]: ''
-    }))
-  }
-
-  const handleRemoveFleetNumber = (type: AssetType, subcategoryId: string, fleetNumber: number) => {
-    setTempSubcategories((prev) => ({
-      ...prev,
-      [type]: prev[type].map((subcategory) =>
-        subcategory.id === subcategoryId
-          ? { ...subcategory, fleetNumbers: subcategory.fleetNumbers.filter((number) => number !== fleetNumber) }
-          : subcategory
-      )
-    }))
-  }
-
-  const handleOpenSettings = async () => {
-    event('button_clicked', {
-      button_name: 'open_settings',
-      section: currentArea,
-      station: currentStation
-    })
-    setActiveTab(isAdmin ? 'session' : 'pin')
-    setTempTimeout(sessionTimeoutHours.toString())
-    setTempCompanyName(companyName)
-    
-    // Reset PIN fields and error states
-    setCurrentPin('')
-    setNewPin('')
-    setConfirmPin('')
-    setPinError('')
-    setPinMessage('')
-    
-    // Reset clear reports checkbox
-    setClearReportsChecked(false)
-    
-    // Load current fleet counts
-    try {
-      const counts = await getFleetCounts()
-      setFleetCounts(counts)
-      setTempBikeCount(counts.bikes.toString())
-      setTempHelmetCount(counts.helmets.toString())
-    } catch (error) {
-      console.error('Error loading fleet counts:', error)
-    }
-
-    setTempSubcategories(await getSubcategorySettings())
-    setFleetNumberInputs({})
-    
-    setShowSettings(true)
-  }
-
-  const handleSaveSettings = async () => {
-    event('button_clicked', {
-      button_name: 'save_settings',
-      settings_tab: activeTab,
-      section: currentArea
-    })
-    setIsUpdatingFleet(true)
-    setPinError('')
-    setPinMessage('')
-
-    const updatePinIfRequested = async (): Promise<boolean> => {
-      if (!(currentPin.trim() || newPin.trim() || confirmPin.trim())) {
-        return true
-      }
-
-      if (newPin.trim().length < 4) {
-        setPinError('New PIN must be at least 4 digits')
-        return false
-      }
-      if (newPin !== confirmPin) {
+                // Fleet tab removed
         setPinError('New PIN and confirmation do not match')
         return false
       }
@@ -666,7 +566,7 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
                                           )
                                         }))
                                       }}
-                                      className="w-32 px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      className="w-32 px-3 py-2 border border-blue-200 bg-blue-50 text-blue-800 font-semibold rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none shadow-sm transition-colors"
                                       disabled={isUpdatingFleet}
                                     >
                                       <option value={0}>Select count</option>
@@ -678,23 +578,7 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
                                   </div>
 
                                   {subcategory.fleetNumbers.length > 0 ? (
-                                    <div className="flex flex-wrap gap-2">
-                                      {subcategory.fleetNumbers.map((fleetNumber) => (
-                                        <button
-                                          key={fleetNumber}
-                                          onClick={() => handleRemoveFleetNumber(type, subcategory.id, fleetNumber)}
-                                          className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors text-sm"
-                                          disabled={isUpdatingFleet}
-                                          title="Remove fleet number"
-                                        >
-                                          <span>#{fleetNumber}</span>
-                                          <span className="material-symbols-outlined text-sm">close</span>
-                                        </button>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <p className="text-xs text-gray-500">No fleet numbers assigned.</p>
-                                  )}
+                                    // Fleet number buttons removed; only select menu remains
                                 </div>
                               )
                             })}
