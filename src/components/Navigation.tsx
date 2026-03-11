@@ -155,7 +155,7 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
               </h1>
               
               <button
-                onClick={handleCloseSettings}
+                onClick={() => setShowSettings(true)}
                 className="flex items-center px-2 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                 title="Settings"
               >
