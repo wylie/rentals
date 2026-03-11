@@ -406,13 +406,17 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
                                       value={subcategory.fleetNumbers.length}
                                       onChange={e => {
                                         const count = parseInt(e.target.value, 10)
-                                        const numbers = Array.from({ length: count }, (_, i) => i + 1)
-                                        setTempSubcategories(prev => ({
-                                          ...prev,
-                                          [type]: prev[type].map(s =>
-                                            s.id === subcategory.id ? { ...s, fleetNumbers: numbers } : s
-                                          )
-                                        }))
+                                        setTempSubcategories(prev => {
+                                          // Partition asset numbers across subcategories
+                                          let nextNumber = 1
+                                          const updated = prev[type].map((s) => {
+                                            const newCount = s.id === subcategory.id ? count : s.fleetNumbers.length
+                                            const numbers = Array.from({ length: newCount }, (_, i) => nextNumber + i)
+                                            nextNumber += newCount
+                                            return { ...s, fleetNumbers: numbers }
+                                          })
+                                          return { ...prev, [type]: updated }
+                                        })
                                       }}
                                       className="w-32 px-3 py-2 border border-blue-200 bg-blue-50 text-blue-800 font-semibold rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none shadow-sm transition-colors"
                                       disabled={isUpdatingFleet}
