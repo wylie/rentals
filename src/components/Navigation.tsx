@@ -139,10 +139,12 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
   }
 
   useEffect(() => {
-    if (!showSettings) {
-      return
-    }
-
+    if (!showSettings) return;
+    // Fetch latest subcategory settings when modal opens
+    (async () => {
+      const latest = await getSubcategorySettings();
+      setTempSubcategories(latest);
+    })();
     const handleKeyDown = (keyboardEvent: KeyboardEvent) => {
       if (keyboardEvent.key === 'Escape') {
         event('button_clicked', {
@@ -152,7 +154,6 @@ export default function Navigation({ currentArea, onClearReports }: NavigationPr
         handleCloseSettings()
       }
     }
-
     window.addEventListener('keydown', handleKeyDown)
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
