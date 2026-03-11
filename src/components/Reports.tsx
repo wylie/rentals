@@ -46,27 +46,16 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
     const now = Date.now()
     let processedData: ReportData[] = []
     let subcategorySettings: any = null
+    let activeAssets: Asset[] = []
 
     // Use cached assets if available and fresh
     if (assetsCache && now - assetsCache.timestamp < 60000) {
       processedData = assetsCache.data
+      activeAssets = processedData.map(d => d.asset)
     } else {
       const allAssets = await getAssets()
-      const activeAssets = allAssets.filter(asset => asset.active)
+      activeAssets = allAssets.filter(asset => asset.active)
       subcategorySettings = await getSubcategorySettings()
-      processedData = activeAssets.map((asset) => {
-        const assetSessions = [] // Will be filled below
-        return {
-          asset,
-          displayLabel: getDisplayLabel(asset, subcategorySettings),
-          subcategoryName: getAssetSubcategoryName(asset, subcategorySettings) || 'Uncategorized',
-          todayDuration: 0,
-          weekDuration: 0,
-          todaySessions: 0,
-          weekSessions: 0
-        }
-      })
-      setAssetsCache({ data: processedData, timestamp: now })
     }
 
     // Use cached subcategory settings if available and fresh
@@ -83,36 +72,32 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
     const allSessions = await getSessions()
     const filteredSessions = allSessions.filter(session => {
       const checkedOutDate = new Date(session.checked_out_at)
-      return checkedOutDate >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && session.returned_at !== null
+      return checkedOutDate >= new Date(now - 7 * 24 * 60 * 60 * 1000) && session.returned_at !== null
     })
 
     // Process data for each asset
-    const processedData: ReportData[] = activeAssets.map((asset) => {
+    processedData = activeAssets.map((asset) => {
       const assetSessions = filteredSessions.filter(session => session.asset_id === asset.id)
-      
+      const todayStart = new Date(now)
+      todayStart.setHours(0,0,0,0)
       const todaySessions = assetSessions.filter(session => 
-        new Date(session.checked_out_at) >= new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        new Date(session.checked_out_at) >= todayStart
       )
-      
       const weekSessions = assetSessions
-
-      // Calculate durations in minutes
       const todayDuration = todaySessions.reduce((total, session) => {
         if (session.returned_at && session.checked_out_at) {
           const duration = new Date(session.returned_at).getTime() - new Date(session.checked_out_at).getTime()
-          return total + Math.round(duration / (1000 * 60)) // Convert to minutes
+          return total + Math.round(duration / (1000 * 60))
         }
         return total
       }, 0)
-
       const weekDuration = weekSessions.reduce((total, session) => {
         if (session.returned_at && session.checked_out_at) {
           const duration = new Date(session.returned_at).getTime() - new Date(session.checked_out_at).getTime()
-          return total + Math.round(duration / (1000 * 60)) // Convert to minutes
+          return total + Math.round(duration / (1000 * 60))
         }
         return total
       }, 0)
-
       return {
         asset,
         displayLabel: getDisplayLabel(asset, subcategorySettings),
@@ -123,21 +108,7 @@ const Reports = forwardRef<{ clearReports: () => Promise<void> }>((_props, ref) 
         weekSessions: weekSessions.length
       }
     })
-
-    setReportData(processedData)
-
-    const returnChecks = await getBikeReturnChecks()
-    const bikesById = new Map(activeAssets.map((asset) => [asset.id, getDisplayLabel(asset, subcategorySettings)]))
-    const returnRows: BikeReturnRow[] = returnChecks.map((check) => ({
-      id: check.id,
-      assetLabel: bikesById.get(check.asset_id) || `Bike ${check.asset_id}`,
-      cleaned: check.cleaned,
-      needsMaintenance: check.needs_maintenance,
-      maintenanceNotes: check.maintenance_notes,
-      createdAt: check.created_at
-    }))
-
-    setBikeReturnRows(returnRows)
+    setAssetsCache({ data: processedData, timestamp: now })
   }
 
   const exportToCSV = () => {
